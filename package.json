@@ -1,0 +1,36 @@
+{
+  "name": "prisma-analytics",
+  "version": "1.0.0",
+  "description": "Platform for financial diagnosis, ratio analysis, and automated executive reporting designed for auditors and financial experts.",
+  "main": "backend/main.js",
+  "scripts": {
+    "start": "concurrently \"npm run start:frontend\" \"wait-on http://localhost:5173 && npm run start:electron\"",
+    "start:frontend": "cd frontend && npm run dev",
+    "start:electron": "cross-env NODE_ENV=development electron .",
+    "build": "cd frontend && npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Amanebubble/Prisma-Analytics.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Amanebubble/Prisma-Analytics/issues"
+  },
+  "homepage": "https://github.com/Amanebubble/Prisma-Analytics#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.4",
+    "cross-env": "^10.1.0",
+    "electron": "^43.3.0",
+    "wait-on": "^9.1.0"
+  },
+  "dependencies": {
+    "pdf-parse": "^2.4.5",
+    "sqlite3": "^6.0.1",
+    "xlsx": "^0.18.5"
+  }
+}

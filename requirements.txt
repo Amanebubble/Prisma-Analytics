@@ -1,0 +1,23 @@
+# DEPENDENCIAS DEL PROYECTO: PRISMA ANALYTICS
+# Este archivo sirve como bitácora humana de las librerías instaladas. 
+# Nota técnica: Para el empaquetado final (.exe), Electron y npm utilizarán el archivo `package.json` para discernir entre dependencias de producción (dependencies) y de desarrollo (devDependencies).
+
+## Dependencias de Producción (Backend/Lógica - Se incluyen en el .exe final)
+- sqlite3: Motor de base de datos local y nativo para almacenar información de clientes y documentos.
+- xlsx: Procesamiento e ingesta de estados financieros estructurados en Excel y CSV.
+- pdf-parse: Extracción de texto crudo de estados financieros escaneados o digitales en formato PDF.
+
+## Dependencias de Desarrollo (Backend - NO se incluyen en el .exe final)
+- electron: Entorno de ejecución de escritorio.
+- concurrently: Para correr React y Electron al mismo tiempo en desarrollo.
+- wait-on: Para esperar a que React cargue antes de abrir Electron.
+- cross-env: Para manejar variables de entorno entre Windows/Mac/Linux.
+
+## Dependencias del Frontend (Interfaz UI)
+- react / react-dom: Librería principal de la interfaz.
+- react-router-dom: Para la navegación (Sidebar a Dashboard/Clientes).
+- lucide-react: Para los íconos limpios y modernos de la interfaz.
+- vite (y plugins): Entorno de desarrollo ultrarrápido para empaquetar React.
+
+---
+*Regla de trabajo activa: Actualizar este archivo cada vez que se agregue o quite una librería.*

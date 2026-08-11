@@ -1,0 +1,32 @@
+# Dependencias
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+dist/
+dist-electron/
+release/
+
+# Archivos de la base de datos local y temporales
+data/temp/*
+data/test_db/*.sqlite
+data/exports/*
+
+# Mantener las carpetas en git aunque estén vacías
+!data/temp/.gitkeep
+!data/test_db/.gitkeep
+!data/exports/.gitkeep
+
+# Variables de entorno
+.env
+.env.local
+.env.production
+.env.development
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
