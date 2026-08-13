@@ -1,13 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Database, ClipboardCheck, LineChart, Calendar, FileText, Briefcase, Settings, User } from 'lucide-react';
+import { Home, Database, ClipboardCheck, LineChart, Calendar, FileText, Briefcase, Settings, User, Activity, History } from 'lucide-react';
 import './Sidebar.css';
 
 const navItems = [
   { path: '/', label: 'Panel de Clientes', icon: Home },
+  { path: '/cliente', label: 'Resumen del Cliente', icon: Activity },
   { path: '/carga-datos', label: 'Carga de Datos', icon: Database },
   { path: '/auditoria', label: 'Auditoría Pre-Hacienda', icon: ClipboardCheck },
   { path: '/analisis', label: 'Análisis Financiero (Ratios)', icon: LineChart },
   { path: '/planificacion', label: 'Planificación Mensual', icon: Calendar },
+  { path: '/historial', label: 'Historial de Auditoría', icon: History },
   { path: '/reportes', label: 'Reportes Ejecutivos', icon: FileText },
 ];
 
