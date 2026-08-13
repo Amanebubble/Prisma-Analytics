@@ -1,0 +1,358 @@
+/* Overlay Background */
+.toolkit-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 999;
+  animation: fadeOverlay 0.3s ease-out;
+}
+
+@keyframes fadeOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Drawer Container */
+.toolkit-drawer {
+  position: fixed;
+  top: 0;
+  right: -450px;
+  width: 400px;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  box-shadow: -5px 0 30px rgba(0, 0, 0, 0.1);
+  transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #f1f5f9;
+}
+
+.toolkit-drawer.open {
+  right: 0;
+}
+
+/* Header */
+.toolkit-header {
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.toolkit-emoji {
+  font-size: 1.5rem;
+}
+
+.header-title h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.close-btn {
+  background: #f1f5f9;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Tabs Navigation */
+.toolkit-tabs {
+  display: flex;
+  padding: 1rem 1.5rem 0;
+  gap: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.t-tab {
+  background: none;
+  border: none;
+  padding: 0.75rem;
+  color: #94a3b8;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.t-tab:hover {
+  color: #0ea5e9;
+}
+
+.t-tab.active {
+  color: #0ea5e9;
+}
+
+.t-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #0ea5e9;
+  border-radius: 2px 2px 0 0;
+}
+
+/* Content Area */
+.toolkit-content {
+  padding: 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.tool-section h3 {
+  margin: 0 0 0.5rem 0;
+  color: #1e293b;
+  font-size: 1.1rem;
+}
+
+.tool-desc {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.mt-6 {
+  margin-top: 2rem;
+}
+
+/* Calculator specific styles */
+.iva-calculator {
+  background: #f8fafc;
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.input-group label {
+  display: block;
+  font-size: 0.85rem;
+  color: #475569;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.calc-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.calc-input:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.toggle-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  background: #e2e8f0;
+  padding: 0.25rem;
+  border-radius: 8px;
+}
+
+.toggle-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-btn.active {
+  background: white;
+  color: #0ea5e9;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.calc-results {
+  margin-top: 1.5rem;
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.result-row.total {
+  border-top: 1px dashed #cbd5e1;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.text-blue {
+  color: #0ea5e9;
+  font-weight: 600;
+}
+
+/* Other tabs */
+.coming-soon-box {
+  background: #f1f5f9;
+  border: 1px dashed #cbd5e1;
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.notes-area {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.notes-area:focus {
+  border-color: #0ea5e9;
+}
+
+/* What-If Slider Styles */
+.scenario-simulator {
+  background: white;
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.slider-header label {
+  font-size: 0.85rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.slider-header span {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.slider-input {
+  width: 100%;
+  accent-color: #0ea5e9;
+  cursor: pointer;
+}
+
+.insight-box {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-left: 4px solid #0ea5e9;
+  font-size: 0.8rem;
+  color: #334155;
+  border-radius: 0 4px 4px 0;
+  font-weight: 500;
+}
+
+/* MathLive Standard Calculator */
+.mathlive-container {
+  background: #f8fafc;
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.math-input-field {
+  width: 100%;
+  font-size: 1.5rem;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  outline: none;
+  --keyboard-zindex: 2000;
+  --keyboard-background: #f8fafc;
+  --keyboard-toolbar-background: #e0f2fe;
+}
+
+.math-input-field:focus,
+.math-input-field:focus-within {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.math-result {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 1rem;
+  color: #475569;
+}
+
+.math-result .res-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0ea5e9;
+}

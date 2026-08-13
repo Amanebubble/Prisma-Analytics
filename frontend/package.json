@@ -10,7 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@cortex-js/compute-engine": "^0.105.0",
     "lucide-react": "^1.31.0",
+    "mathjs": "^15.2.0",
+    "mathlive": "^0.110.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2",

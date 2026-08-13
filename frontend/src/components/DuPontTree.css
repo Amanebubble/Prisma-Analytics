@@ -1,0 +1,102 @@
+.dupont-container {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+  margin-top: 2rem;
+  border: 1px solid #e2e8f0;
+}
+
+.dupont-title {
+  color: #1e293b;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.dupont-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dupont-node {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1.25rem;
+  min-width: 200px;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.dupont-node:hover {
+  transform: translateY(-4px);
+  border-color: #0ea5e9;
+  box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.15);
+}
+
+.dupont-node.root {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  border: none;
+  color: white;
+}
+
+.dupont-node.root .node-label {
+  color: #e0f2fe;
+}
+
+.dupont-node.highlight {
+  border-color: #f59e0b;
+}
+.dupont-node.highlight:hover {
+  box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.15);
+}
+
+.node-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.node-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.dupont-node:not(.root) .node-value {
+  color: #0f172a;
+}
+
+.node-formula {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.dupont-level {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.dupont-operator {
+  font-size: 1.5rem;
+  color: #cbd5e1;
+  font-weight: bold;
+}
+
+/* Conectores Visuales (Líneas) */
+.dupont-branches {
+  width: 2px;
+  height: 2rem;
+  background-color: #e2e8f0;
+  margin-top: 0.5rem;
+}
