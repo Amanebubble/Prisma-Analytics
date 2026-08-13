@@ -52,6 +52,7 @@ require('./database/db');
 const clientService = require('./services/clientService');
 const ingestService = require('./services/ingestService');
 const financeService = require('./services/financeService');
+const { dialog } = require('electron');
 
 // Basic IPC Example for health check
 ipcMain.handle('get-app-info', async () => {
@@ -60,6 +61,15 @@ ipcMain.handle('get-app-info', async () => {
     version: app.getVersion(),
     env: isDev ? 'development' : 'production'
   };
+});
+
+// Dialog IPC Handlers
+ipcMain.handle('open-file-dialog', async (event, options) => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    ...options
+  });
+  return result;
 });
 
 // Clients IPC Handlers

@@ -17,6 +17,7 @@
 - react / react-dom: Librería principal de la interfaz.
 - react-router-dom: Para la navegación (Sidebar a Dashboard/Clientes).
 - lucide-react: Para los íconos limpios y modernos de la interfaz.
+- recharts: Librería de gráficos dinámicos y limpios para React.
 - vite (y plugins): Entorno de desarrollo ultrarrápido para empaquetar React.
 
 ---

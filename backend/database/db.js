@@ -25,6 +25,52 @@ const db = new sqlite3.Database(dbPath, (err) => {
 // Función para inicializar las tablas principales (Módulo 1 y 2)
 function initializeTables() {
   db.serialize(() => {
+    // MODO PRUEBA AISLADA: Limpiamos la base de datos en cada reinicio para que las pruebas sean desde cero.
+    // (Luego quitaremos esto cuando pasemos a producción)
+    console.log('--- MODO PRUEBA: Limpiando base de datos ---');
+    db.run(`DROP TABLE IF EXISTS dte_records`);
+    db.run(`DROP TABLE IF EXISTS financial_statements`);
+    db.run(`DROP TABLE IF EXISTS clients`);
+    db.run(`DROP TABLE IF EXISTS niif_catalog`);
+
+    // Tabla de Catálogo NIIF
+    db.run(`
+      CREATE TABLE IF NOT EXISTS niif_catalog (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL, -- 'asset', 'liability', 'equity', 'revenue', 'expense', etc.
+        level INTEGER NOT NULL -- Nivel de jerarquía (1 = rubro, 2 = cuenta mayor, etc.)
+      )
+    `);
+
+    // Poblar catálogo básico NIIF
+    db.run(`INSERT OR IGNORE INTO niif_catalog (code, name, type, level) VALUES
+      ('1', 'Activos', 'asset', 1),
+      ('1.1', 'Activos Corrientes', 'asset', 2),
+      ('1.1.1', 'Efectivo y Equivalentes de Efectivo', 'asset', 3),
+      ('1.1.2', 'Cuentas por Cobrar', 'asset', 3),
+      ('1.1.3', 'Inventarios', 'asset', 3),
+      ('1.2', 'Activos No Corrientes', 'asset', 2),
+      ('1.2.1', 'Propiedades, Planta y Equipo', 'asset', 3),
+      ('2', 'Pasivos', 'liability', 1),
+      ('2.1', 'Pasivos Corrientes', 'liability', 2),
+      ('2.1.1', 'Cuentas por Pagar Comerciales', 'liability', 3),
+      ('2.1.2', 'Préstamos a Corto Plazo', 'liability', 3),
+      ('2.2', 'Pasivos No Corrientes', 'liability', 2),
+      ('2.2.1', 'Préstamos a Largo Plazo', 'liability', 3),
+      ('3', 'Patrimonio', 'equity', 1),
+      ('3.1', 'Capital Social', 'equity', 2),
+      ('3.2', 'Utilidades Retenidas', 'equity', 2),
+      ('4', 'Ingresos', 'revenue', 1),
+      ('4.1', 'Ingresos Ordinarios', 'revenue', 2),
+      ('5', 'Gastos', 'expense', 1),
+      ('5.1', 'Costos de Venta', 'expense', 2),
+      ('5.2', 'Gastos de Administración', 'expense', 2),
+      ('5.3', 'Gastos de Venta', 'expense', 2),
+      ('5.4', 'Gastos Financieros', 'expense', 2)
+    `);
+
     // Tabla de Clientes
     db.run(`
       CREATE TABLE IF NOT EXISTS clients (
@@ -36,6 +82,13 @@ function initializeTables() {
         status TEXT DEFAULT 'active',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Poblar clientes de prueba
+    db.run(`INSERT OR IGNORE INTO clients (name, nit, nrc, sector) VALUES 
+      ('Lácteos El Salvador S.A.', '0614-010190-101-1', '123456-7', 'Industria'),
+      ('Ferretería La Tuerca', '0614-150685-101-2', '765432-1', 'Comercio'),
+      ('Constructora Prisma', '0614-201080-101-3', '112233-4', 'Construcción')
     `);
 
     // Tabla de Estados Financieros (Balances / Estado de Resultados)

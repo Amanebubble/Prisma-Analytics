@@ -1,4 +1,6 @@
-import { Activity, TrendingUp, Users, AlertCircle } from 'lucide-react';
+import { Activity, TrendingUp, Users, AlertCircle, Upload } from 'lucide-react';
+import { useState } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -9,11 +11,72 @@ export default function Dashboard() {
     { title: 'Salud Promedio', value: '87%', icon: Activity, color: 'var(--accent-primary)' },
   ];
 
+  const [isUploading, setIsUploading] = useState(false);
+  const [financialData, setFinancialData] = useState<any>(null);
+
+  const handleUpload = async () => {
+    try {
+      // @ts-ignore
+      if (!window.require) {
+        alert("La subida de archivos requiere entorno Electron.");
+        return;
+      }
+      // @ts-ignore
+      const { ipcRenderer } = window.require('electron');
+      
+      const result = await ipcRenderer.invoke('open-file-dialog', {
+        filters: [{ name: 'Excel', extensions: ['xlsx', 'csv'] }]
+      });
+
+      if (!result.canceled && result.filePaths.length > 0) {
+        setIsUploading(true);
+        const filePath = result.filePaths[0];
+        
+        // Simular ID de cliente y año por ahora (en producción habría un modal)
+        const response = await ipcRenderer.invoke('process-excel', {
+          filePath,
+          clientId: 1, 
+          year: 2023,
+          type: 'balance'
+        });
+        
+        if (response.success) {
+          // Generar datos ficticios para el gráfico para la demostración, 
+          // o idealmente llamar a get-financials
+          setFinancialData([
+            { name: 'Activo Corriente', value: 45000 },
+            { name: 'Activo No Corriente', value: 120000 },
+            { name: 'Pasivo Corriente', value: 30000 },
+            { name: 'Patrimonio', value: 135000 },
+          ]);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error procesando el archivo");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="dashboard animate-fade-in">
-      <div className="page-header">
-        <h1>Dashboard General</h1>
-        <p>Resumen de actividad y métricas clave de tus clientes.</p>
+      <div className="page-header header-with-action">
+        <div>
+          <h1>Dashboard General</h1>
+          <p>Resumen de actividad y métricas clave de tus clientes.</p>
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {financialData && (
+            <button className="btn-secondary flex-btn" onClick={() => window.print()}>
+              Descargar PDF
+            </button>
+          )}
+          <button className="btn-primary flex-btn" onClick={handleUpload} disabled={isUploading}>
+            <Upload size={20} />
+            {isUploading ? 'Procesando...' : 'Subir Excel Financiero'}
+          </button>
+        </div>
       </div>
 
       <div className="stats-grid">
@@ -40,11 +103,25 @@ export default function Dashboard() {
             <button className="btn-secondary">Ver Todos</button>
           </div>
           <div className="panel-body">
-            <div className="empty-state">
-              <TrendingUp size={48} className="empty-icon" />
-              <p>Selecciona un cliente para comenzar el análisis financiero y valuación.</p>
-              <button className="btn-primary mt-4">Analizar Nuevo Cliente</button>
-            </div>
+            {!financialData ? (
+              <div className="empty-state">
+                <TrendingUp size={48} className="empty-icon" />
+                <p>Selecciona un cliente o sube un archivo Excel para comenzar el análisis.</p>
+              </div>
+            ) : (
+              <div style={{ width: '100%', height: 300 }}>
+                <h4>Estructura de Capital (Ejemplo)</h4>
+                <ResponsiveContainer>
+                  <BarChart data={financialData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: 'var(--shadow-md)' }} />
+                    <Bar dataKey="value" fill="var(--accent-primary)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         </div>
 
