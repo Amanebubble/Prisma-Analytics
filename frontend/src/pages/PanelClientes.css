@@ -1,0 +1,122 @@
+.panel-clientes {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.clients-table-container {
+  padding: 1.5rem;
+  border-radius: 16px;
+  overflow-x: auto;
+}
+
+.clients-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.clients-table th {
+  text-align: left;
+  padding: 1rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 2px solid var(--border-color);
+  font-weight: 600;
+}
+
+.clients-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  vertical-align: middle;
+}
+
+.clients-table tbody tr:hover td {
+  background-color: rgba(248, 250, 252, 0.5);
+}
+
+.client-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.client-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(14, 165, 233, 0.1);
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.font-bold {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.health-score-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-tertiary);
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  display: inline-flex;
+}
+
+.text-right {
+  text-align: right !important;
+}
+
+.profit-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  display: inline-block;
+}
+
+.profit-badge.positive {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+}
+
+.profit-badge.negative {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-badge.auditado {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+}
+
+.status-badge.en-revisión {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+}
+
+.status-badge.pendiente {
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--text-muted);
+}
+
+.btn-small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}

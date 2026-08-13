@@ -1,35 +1,21 @@
 import { useState, useEffect } from 'react';
-import { UploadCloud, FileSpreadsheet, FileJson, CheckCircle, AlertCircle, Building, FileText, AlertTriangle } from 'lucide-react';
+import { UploadCloud, FileSpreadsheet, FileJson, CheckCircle, AlertCircle, FileText, AlertTriangle } from 'lucide-react';
 import './CargaDatos.css';
 
 export default function CargaDatos() {
   const [activeUpload, setActiveUpload] = useState<string | null>(null);
   const [mappedData, setMappedData] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [clients, setClients] = useState<any[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<number>(0);
   const [aiStatus, setAiStatus] = useState<string | null>(null);
   const [aiDiff, setAiDiff] = useState<number>(0);
 
   useEffect(() => {
-    // Cargar los clientes al iniciar
-    const fetchClients = async () => {
-      try {
-        // @ts-ignore
-        if (window.require) {
-          // @ts-ignore
-          const { ipcRenderer } = window.require('electron');
-          const clientsData = await ipcRenderer.invoke('get-clients');
-          if (clientsData && clientsData.length > 0) {
-            setClients(clientsData);
-            setSelectedClientId(clientsData[0].id);
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching clients:', err);
-      }
+    // Cargar cliente activo (simulado)
+    const fetchActiveClient = async () => {
+      setSelectedClientId(1); // Fijo por ahora hasta que haya contexto global
     };
-    fetchClients();
+    fetchActiveClient();
   }, []);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -119,21 +105,6 @@ export default function CargaDatos() {
           <h1>Carga de Datos y Mapeo NIIF (Motor IA)</h1>
           <p>Sube tus balances (Excel o PDF). Prisma usará Inteligencia Artificial para estructurar y validar los montos.</p>
         </div>
-        
-        {/* Selector de Empresa */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-secondary)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-          <Building size={18} color="var(--accent-primary)" />
-          <select 
-            value={selectedClientId} 
-            onChange={(e) => setSelectedClientId(Number(e.target.value))}
-            style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)', cursor: 'pointer' }}
-          >
-            {clients.length === 0 && <option value={0}>Cargando empresas...</option>}
-            {clients.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
       </div>
 
       <div className="upload-grid">
@@ -159,13 +130,13 @@ export default function CargaDatos() {
           </div>
         </div>
 
-        {/* Tarjeta 2: Libros IVA */}
+        {/* Tarjeta 2: Libros y Anexos */}
         <div className="upload-card">
           <div className="upload-icon-wrapper" style={{ background: 'rgba(39, 174, 96, 0.1)', color: 'var(--success)' }}>
             <FileSpreadsheet size={32} />
           </div>
-          <h3>Libros de IVA (F-07)</h3>
-          <p>Libro de Ventas y Compras Mensual para cruces pre-hacienda (.xlsx, .csv)</p>
+          <h3>Libros y anexos</h3>
+          <p>Libro de Ventas y Compras Mensual, F-07 y Anexos (.xlsx, .csv)</p>
           
           <div 
             id="iva"
@@ -181,25 +152,25 @@ export default function CargaDatos() {
           </div>
         </div>
 
-        {/* Tarjeta 3: DTEs (JSON) */}
+        {/* Tarjeta 3: Estados Bancarios */}
         <div className="upload-card">
           <div className="upload-icon-wrapper" style={{ background: 'rgba(242, 153, 74, 0.1)', color: 'var(--warning)' }}>
             <FileJson size={32} />
           </div>
-          <h3>Documentos DTE</h3>
-          <p>Facturación electrónica, CCF, Notas de Crédito (.json, .xml)</p>
+          <h3>Estados de cuenta / Estados bancarios</h3>
+          <p>Formatos bancarios para conciliación (.xlsx, .csv, .pdf)</p>
           
           <div 
-            id="dte"
-            className={`dropzone ${activeUpload === 'dte' ? 'active' : ''}`}
+            id="bank"
+            className={`dropzone ${activeUpload === 'bank' ? 'active' : ''}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            onClick={() => handleClickUpload(['json', 'xml'])}
+            onClick={() => handleClickUpload(['xlsx', 'csv', 'pdf'])}
           >
             <UploadCloud size={24} color="var(--warning)" style={{ margin: '0 auto 0.5rem auto' }} />
             <div className="dropzone-text">Haz clic o arrastra tus archivos aquí</div>
-            <div className="dropzone-subtext">JSON estructurados del MH</div>
+            <div className="dropzone-subtext">Extractos bancarios del mes</div>
           </div>
         </div>
       </div>

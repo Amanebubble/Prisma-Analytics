@@ -1,9 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Database, ClipboardCheck, LineChart, Calendar, FileText } from 'lucide-react';
+import { Home, Database, ClipboardCheck, LineChart, Calendar, FileText, Briefcase, Settings, User } from 'lucide-react';
 import './Sidebar.css';
 
 const navItems = [
-  { path: '/', label: 'Principal', icon: Home },
+  { path: '/', label: 'Panel de Clientes', icon: Home },
   { path: '/carga-datos', label: 'Carga de Datos', icon: Database },
   { path: '/auditoria', label: 'Auditoría Pre-Hacienda', icon: ClipboardCheck },
   { path: '/analisis', label: 'Análisis Financiero (Ratios)', icon: LineChart },
@@ -11,7 +11,7 @@ const navItems = [
   { path: '/reportes', label: 'Reportes Ejecutivos', icon: FileText },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onOpenToolkit }: { onOpenToolkit?: () => void }) {
   const location = useLocation();
 
   return (
@@ -40,17 +40,30 @@ export default function Sidebar() {
               </li>
             );
           })}
+          
+          {/* Action button in nav */}
+          <li>
+            <button className="nav-link" onClick={onOpenToolkit} style={{ background: 'transparent', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
+              <Briefcase size={20} className="nav-icon" />
+              <span>Caja de Herramientas</span>
+            </button>
+          </li>
         </ul>
       </nav>
       
-      <div className="sidebar-footer">
-        <div className="user-details">
-          <span className="user-role">Empresa Actual</span>
-          <span className="user-name">Lácteos El Salvador S.A.</span>
+      <div className="sidebar-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ background: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '50%' }}>
+            <User size={20} color="var(--accent-primary)" />
+          </div>
+          <div className="user-details" style={{ margin: 0 }}>
+            <span className="user-role">Administrador</span>
+            <span className="user-name">Juan</span>
+          </div>
         </div>
-        <div className="user-details" style={{ marginTop: '0.5rem' }}>
-          <span className="user-role">Periodo: <strong style={{ color: 'var(--text-primary)'}}>Julio 2026</strong></span>
-        </div>
+        <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+          <Settings size={18} />
+        </button>
       </div>
     </aside>
   );

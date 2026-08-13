@@ -11,10 +11,10 @@ interface ToolkitDrawerProps {
   onClose: () => void;
 }
 
-type TabType = 'calculadora' | 'escenarios' | 'notas' | 'calendario';
+type TabType = 'tributaria' | 'estandar' | 'notas' | 'calendario';
 
 export default function ToolkitDrawer({ isOpen, onClose }: ToolkitDrawerProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('calculadora');
+  const [activeTab, setActiveTab] = useState<TabType>('tributaria');
   
   const ce = new ComputeEngine();
   const [mathInput, setMathInput] = useState<string>('');
@@ -63,17 +63,6 @@ export default function ToolkitDrawer({ isOpen, onClose }: ToolkitDrawerProps) {
     }
   };
 
-  // Estados para Simulador What-If (Usando datos base ficticios para la demo)
-  const [ventasVar, setVentasVar] = useState<number>(0);
-  const [costosVar, setCostosVar] = useState<number>(0);
-  const baseVentas = 100000;
-  const baseCostos = 60000;
-  
-  const simVentas = baseVentas * (1 + (ventasVar / 100));
-  const simCostos = baseCostos * (1 + (costosVar / 100));
-  const simUtilidad = simVentas - simCostos;
-  const baseUtilidad = baseVentas - baseCostos;
-
   const ivaResult = calcularIVA();
   const formatCurrency = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
@@ -96,10 +85,10 @@ export default function ToolkitDrawer({ isOpen, onClose }: ToolkitDrawerProps) {
         </div>
 
         <div className="toolkit-tabs">
-          <button className={`t-tab ${activeTab === 'calculadora' ? 'active' : ''}`} onClick={() => setActiveTab('calculadora')}>
+          <button className={`t-tab ${activeTab === 'tributaria' ? 'active' : ''}`} onClick={() => setActiveTab('tributaria')} title="Calc. Tributaria">
             <Calculator size={18} />
           </button>
-          <button className={`t-tab ${activeTab === 'escenarios' ? 'active' : ''}`} onClick={() => setActiveTab('escenarios')}>
+          <button className={`t-tab ${activeTab === 'estandar' ? 'active' : ''}`} onClick={() => setActiveTab('estandar')} title="Calc. Estándar">
             <Sliders size={18} />
           </button>
           <button className={`t-tab ${activeTab === 'notas' ? 'active' : ''}`} onClick={() => setActiveTab('notas')}>
@@ -111,7 +100,7 @@ export default function ToolkitDrawer({ isOpen, onClose }: ToolkitDrawerProps) {
         </div>
 
         <div className="toolkit-content">
-          {activeTab === 'calculadora' && (
+          {activeTab === 'tributaria' && (
             <div className="tool-section fade-in">
               <h3>Calculadora Tributaria (El Salvador)</h3>
               <p className="tool-desc">Extrae o suma el 13% de IVA al instante.</p>
@@ -158,8 +147,12 @@ export default function ToolkitDrawer({ isOpen, onClose }: ToolkitDrawerProps) {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
 
-              <h3 className="mt-6">Calculadora Estándar (MathLive)</h3>
+          {activeTab === 'estandar' && (
+            <div className="tool-section fade-in">
+              <h3>Calculadora Estándar (MathLive)</h3>
               <p className="tool-desc">Escribe sumas, restas, multiplicaciones y divisiones.</p>
               <div className="mathlive-container">
                 {/* @ts-ignore */}
@@ -173,73 +166,6 @@ export default function ToolkitDrawer({ isOpen, onClose }: ToolkitDrawerProps) {
                 <div className="math-result">
                   <span>Resultado:</span>
                   <span className="res-value">{mathResult ? mathResult : '0'}</span>
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {activeTab === 'escenarios' && (
-            <div className="tool-section fade-in">
-              <h3>Simulador "What-If"</h3>
-              <p className="tool-desc">Analiza la sensibilidad de las ganancias ante cambios en la operación.</p>
-              
-              <div className="scenario-simulator">
-                <div className="slider-group">
-                  <div className="slider-header">
-                    <label>Variación en Ventas</label>
-                    <span className={ventasVar > 0 ? 'text-green' : ventasVar < 0 ? 'text-orange' : ''}>
-                      {ventasVar > 0 ? '+' : ''}{ventasVar}%
-                    </span>
-                  </div>
-                  <input 
-                    type="range" 
-                    min="-50" max="50" step="1" 
-                    value={ventasVar} 
-                    onChange={(e) => setVentasVar(Number(e.target.value))}
-                    className="slider-input"
-                  />
-                </div>
-
-                <div className="slider-group mt-4">
-                  <div className="slider-header">
-                    <label>Variación en Costos y Gastos</label>
-                    <span className={costosVar < 0 ? 'text-green' : costosVar > 0 ? 'text-orange' : ''}>
-                      {costosVar > 0 ? '+' : ''}{costosVar}%
-                    </span>
-                  </div>
-                  <input 
-                    type="range" 
-                    min="-50" max="50" step="1" 
-                    value={costosVar} 
-                    onChange={(e) => setCostosVar(Number(e.target.value))}
-                    className="slider-input"
-                  />
-                </div>
-
-                <div className="calc-results mt-4">
-                  <div className="result-row">
-                    <span>Ventas Proyectadas</span>
-                    <span>{formatCurrency(simVentas)}</span>
-                  </div>
-                  <div className="result-row">
-                    <span>Costos Proyectados</span>
-                    <span>{formatCurrency(simCostos)}</span>
-                  </div>
-                  <div className="result-row total">
-                    <span>Utilidad Simulada</span>
-                    <span className={simUtilidad > 0 ? 'text-green' : 'text-orange'}>
-                      {formatCurrency(simUtilidad)}
-                    </span>
-                  </div>
-                  
-                  <div className="insight-box">
-                    {simUtilidad < 0 ? 
-                      "⚠️ Alerta: La empresa entraría en pérdida operativa." : 
-                      simUtilidad > baseUtilidad ? 
-                      "✅ El escenario mejora la rentabilidad actual." : 
-                      "📉 El escenario reduce las ganancias, pero se mantiene a flote."}
-                  </div>
                 </div>
               </div>
             </div>
