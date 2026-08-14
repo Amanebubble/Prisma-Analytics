@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { mockFinancialData, getKPIs } from '../utils/mockFinancialData';
+import { mockFinancialData, getKPIs, getWorkingCapitalMetrics } from '../utils/mockFinancialData';
 import DuPontTree from '../components/DuPontTree';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { TrendingUp, Activity, DollarSign, PieChart } from 'lucide-react';
+import { TrendingUp, Activity, DollarSign, PieChart, Clock, RefreshCw } from 'lucide-react';
 import './Analisis.css';
 
 export default function Analisis() {
   const currentYearData = mockFinancialData.periodos[1];
   const previousYearData = mockFinancialData.periodos[0];
   const kpis = getKPIs(currentYearData);
+  const wc = getWorkingCapitalMetrics(currentYearData);
 
-  const [activeTab, setActiveTab] = useState<'resumen' | 'vertical' | 'dupont' | 'tendencias'>('resumen');
+  const [activeTab, setActiveTab] = useState<'resumen' | 'vertical' | 'dupont' | 'capital'>('resumen');
 
   // Preparar datos para gráfica comparativa
   const chartData = [
@@ -52,16 +53,16 @@ export default function Analisis() {
 
       {/* KPIs Superiores */}
       <div className="kpi-grid">
-        <div className="kpi-card">
+        <div className="kpi-card glass">
           <div className="kpi-icon"><DollarSign size={24} color="#0ea5e9" /></div>
           <div className="kpi-content">
             <p className="kpi-label">Liquidez Corriente</p>
             <h3 className="kpi-value">{kpis.liquidez}x</h3>
-            <p className="kpi-desc">Capacidad de pago a corto plazo</p>
+            <p className="kpi-desc text-green">Estado Saludable</p>
           </div>
         </div>
 
-        <div className="kpi-card">
+        <div className="kpi-card glass">
           <div className="kpi-icon"><Activity size={24} color="#10b981" /></div>
           <div className="kpi-content">
             <p className="kpi-label">ROE (Rentabilidad)</p>
@@ -70,7 +71,7 @@ export default function Analisis() {
           </div>
         </div>
 
-        <div className="kpi-card">
+        <div className="kpi-card glass">
           <div className="kpi-icon"><PieChart size={24} color="#f59e0b" /></div>
           <div className="kpi-content">
             <p className="kpi-label">Nivel de Endeudamiento</p>
@@ -79,12 +80,12 @@ export default function Analisis() {
           </div>
         </div>
 
-        <div className="kpi-card">
+        <div className="kpi-card glass">
           <div className="kpi-icon"><TrendingUp size={24} color="#8b5cf6" /></div>
           <div className="kpi-content">
             <p className="kpi-label">Crecimiento Ventas</p>
             <h3 className="kpi-value text-purple">+17.0%</h3>
-            <p className="kpi-desc">Crecimiento interanual</p>
+            <p className="kpi-desc text-green">Crecimiento interanual</p>
           </div>
         </div>
       </div>
@@ -109,13 +110,19 @@ export default function Analisis() {
         >
           Análisis DuPont
         </button>
+        <button 
+          className={`tab-btn ${activeTab === 'capital' ? 'active' : ''}`}
+          onClick={() => setActiveTab('capital')}
+        >
+          Capital de Trabajo
+        </button>
       </div>
 
       {/* Contenido Dinámico */}
       <div className="tab-content">
         {activeTab === 'resumen' && (
-          <div className="charts-section">
-            <div className="chart-card">
+          <div className="charts-section animate-fade-in">
+            <div className="chart-card glass">
               <h3>Crecimiento Interanual (Análisis Horizontal)</h3>
               <div style={{ width: '100%', height: 350, marginTop: '2rem' }}>
                 <ResponsiveContainer>
@@ -139,8 +146,8 @@ export default function Analisis() {
         )}
 
         {activeTab === 'vertical' && (
-          <div className="vertical-analysis-section fade-in">
-            <div className="chart-card">
+          <div className="vertical-analysis-section animate-fade-in">
+            <div className="chart-card glass">
               <h3>Análisis Vertical (2025)</h3>
               <p className="analisis-subtitle mb-4">Composición porcentual respecto al Total de Activos</p>
               
@@ -204,14 +211,66 @@ export default function Analisis() {
         )}
 
         {activeTab === 'dupont' && (
-          <DuPontTree 
-            data={{
-              utilidadNeta: currentYearData.estado_resultados.utilidad_neta,
-              ventas: currentYearData.estado_resultados.ingresos_ventas,
-              activos: currentYearData.balance_general.total_activos,
-              patrimonio: currentYearData.balance_general.total_patrimonio
-            }} 
-          />
+          <div className="animate-fade-in">
+            <DuPontTree 
+              data={{
+                utilidadNeta: currentYearData.estado_resultados.utilidad_neta,
+                ventas: currentYearData.estado_resultados.ingresos_ventas,
+                activos: currentYearData.balance_general.total_activos,
+                patrimonio: currentYearData.balance_general.total_patrimonio
+              }} 
+            />
+          </div>
+        )}
+
+        {activeTab === 'capital' && (
+          <div className="capital-section animate-fade-in">
+            <div className="chart-card glass">
+              <div className="capital-header">
+                <h3>Ciclo de Conversión de Efectivo (CCC)</h3>
+                <p>Mide cuánto tiempo tarda la empresa en convertir sus inversiones en inventario y otros recursos en flujos de efectivo por ventas.</p>
+              </div>
+
+              <div className="ccc-visualizer">
+                <div className="ccc-metric ccc-dio">
+                  <div className="ccc-icon"><RefreshCw size={20}/></div>
+                  <div className="ccc-info">
+                    <span className="ccc-label">Días de Inventario (DIO)</span>
+                    <span className="ccc-value">{wc.dio} días</span>
+                  </div>
+                </div>
+                <div className="ccc-operator">+</div>
+                <div className="ccc-metric ccc-dso">
+                  <div className="ccc-icon"><Clock size={20}/></div>
+                  <div className="ccc-info">
+                    <span className="ccc-label">Días de Cobro (DSO)</span>
+                    <span className="ccc-value">{wc.dso} días</span>
+                  </div>
+                </div>
+                <div className="ccc-operator">-</div>
+                <div className="ccc-metric ccc-dpo">
+                  <div className="ccc-icon"><TrendingUp size={20}/></div>
+                  <div className="ccc-info">
+                    <span className="ccc-label">Días de Pago (DPO)</span>
+                    <span className="ccc-value">{wc.dpo} días</span>
+                  </div>
+                </div>
+                <div className="ccc-operator">=</div>
+                <div className="ccc-metric ccc-total">
+                  <div className="ccc-info">
+                    <span className="ccc-label">Ciclo Efectivo</span>
+                    <span className="ccc-value text-blue">{wc.ccc} días</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="ccc-insight">
+                <strong>💡 Diagnóstico Automático: </strong> 
+                El dinero de la empresa está "atrapado" en la operación por <strong>{wc.ccc} días</strong> antes de volverse efectivo real. 
+                {wc.ccc > 60 ? " Es un ciclo alto, se recomienda negociar más días con proveedores o acelerar los cobros a clientes para liberar liquidez." : " Es un ciclo saludable, indicando una buena gestión de inventarios y cobros."}
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

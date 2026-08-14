@@ -1,13 +1,6 @@
 .analisis-container {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  padding: 0;
   animation: fadeIn 0.4s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .analisis-header {
@@ -20,24 +13,24 @@
 .analisis-title {
   font-size: 1.875rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .analisis-subtitle {
-  color: #64748b;
+  color: var(--text-secondary);
   margin-top: 0.5rem;
   font-size: 0.95rem;
 }
 
 .period-badge {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: var(--bg-tertiary);
+  color: var(--accent-primary);
   padding: 0.5rem 1rem;
   border-radius: 20px;
   font-weight: 600;
   font-size: 0.875rem;
-  border: 1px solid #bae6fd;
+  border: 1px solid var(--border-color);
 }
 
 /* KPIs Grid */
@@ -49,25 +42,14 @@
 }
 
 .kpi-card {
-  background: white;
-  border-radius: 12px;
   padding: 1.5rem;
   display: flex;
   align-items: flex-start;
   gap: 1rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f1f5f9;
-  transition: all 0.3s ease;
-}
-
-.kpi-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  border-color: #e2e8f0;
 }
 
 .kpi-icon {
-  background: #f8fafc;
+  background: var(--bg-secondary);
   padding: 0.75rem;
   border-radius: 10px;
   display: flex;
@@ -81,7 +63,7 @@
 
 .kpi-label {
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--text-secondary);
   margin: 0 0 0.25rem 0;
   font-weight: 500;
 }
@@ -89,17 +71,18 @@
 .kpi-value {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   margin: 0 0 0.25rem 0;
 }
 
-.text-green { color: #10b981; }
-.text-orange { color: #f59e0b; }
+.text-green { color: var(--success); }
+.text-orange { color: var(--warning); }
 .text-purple { color: #8b5cf6; }
+.text-blue { color: var(--accent-primary); }
 
 .kpi-desc {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -108,7 +91,7 @@
   display: flex;
   gap: 1rem;
   margin-bottom: 2rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 1px;
 }
 
@@ -118,18 +101,18 @@
   padding: 0.75rem 1.5rem;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-secondary);
   cursor: pointer;
   position: relative;
   transition: color 0.2s ease;
 }
 
 .tab-btn:hover {
-  color: #0ea5e9;
+  color: var(--accent-primary);
 }
 
 .tab-btn.active {
-  color: #0ea5e9;
+  color: var(--accent-primary);
 }
 
 .tab-btn.active::after {
@@ -139,7 +122,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background-color: #0ea5e9;
+  background-color: var(--accent-primary);
   border-radius: 2px 2px 0 0;
 }
 
@@ -148,21 +131,16 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  animation: fadeIn 0.4s ease-out;
 }
 
 .chart-card {
-  background: white;
-  border-radius: 12px;
   padding: 2rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f1f5f9;
 }
 
 .chart-card h3 {
   margin: 0;
   font-size: 1.125rem;
-  color: #1e293b;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -178,46 +156,129 @@
   padding: 1rem;
   font-size: 0.85rem;
   text-transform: uppercase;
-  color: #64748b;
-  border-bottom: 2px solid #e2e8f0;
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--border-color);
 }
 
 .vertical-table td {
   padding: 1rem;
-  border-bottom: 1px solid #f1f5f9;
-  color: #334155;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
 .vertical-table tbody tr:hover td {
-  background-color: #f8fafc;
+  background-color: var(--bg-secondary);
 }
 
 .table-section-header td {
-  background-color: #f1f5f9;
+  background-color: var(--bg-secondary);
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   padding: 0.5rem 1rem;
   font-size: 0.85rem;
   letter-spacing: 0.05em;
 }
 
 .table-total td {
-  background-color: #f8fafc;
+  background-color: var(--bg-secondary);
   font-weight: 700;
-  color: #0f172a;
-  border-top: 2px solid #cbd5e1;
+  color: var(--text-primary);
+  border-top: 2px solid var(--border-color);
 }
 
-.text-right {
-  text-align: right !important;
-}
-
-.font-bold {
-  font-weight: 700;
-}
-
-.text-blue { color: #0ea5e9; }
-.text-orange { color: #f59e0b; }
-.text-green { color: #10b981; }
+.text-right { text-align: right !important; }
+.font-bold { font-weight: 700; }
 .mb-4 { margin-bottom: 1rem; }
+
+/* Capital de Trabajo / CCC */
+.capital-header {
+  margin-bottom: 2rem;
+}
+
+.capital-header h3 {
+  margin: 0 0 0.5rem 0;
+}
+
+.capital-header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.ccc-visualizer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-secondary);
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 2rem;
+}
+
+.ccc-metric {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--bg-primary);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  flex: 1;
+}
+
+.ccc-total {
+  background: rgba(14, 165, 233, 0.1);
+  border-color: var(--accent-primary);
+  transform: scale(1.05);
+}
+
+.ccc-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ccc-dio .ccc-icon { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+.ccc-dso .ccc-icon { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+.ccc-dpo .ccc-icon { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+.ccc-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.ccc-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.ccc-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ccc-operator {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 0 1rem;
+}
+
+.ccc-insight {
+  background: var(--bg-tertiary);
+  padding: 1.5rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  border-left: 4px solid var(--accent-primary);
+}

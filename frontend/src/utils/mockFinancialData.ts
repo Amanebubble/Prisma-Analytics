@@ -93,3 +93,32 @@ export function getKPIs(yearData: any) {
     endeudamiento: endeudamiento.toFixed(2) + "%"
   };
 }
+
+// Utilidades para calcular Capital de Trabajo y CCC
+export function getWorkingCapitalMetrics(yearData: any) {
+  const bg = yearData.balance_general;
+  const er = yearData.estado_resultados;
+
+  const getAccount = (list: any[], name: string) => list.find((i: any) => i.cuenta === name)?.monto || 0;
+
+  const cxc = getAccount(bg.desglose_activos, 'Cuentas por Cobrar Comerciales');
+  const inventario = getAccount(bg.desglose_activos, 'Inventarios');
+  const cxp = getAccount(bg.desglose_pasivos, 'Cuentas por Pagar Proveedores');
+  
+  const ventas = er.ingresos_ventas;
+  const costoVentas = er.costo_ventas;
+
+  // DSO = (CxC / Ventas) * 365
+  const dso = Math.round((cxc / ventas) * 365);
+  
+  // DIO = (Inventario / Costo Ventas) * 365
+  const dio = Math.round((inventario / costoVentas) * 365);
+  
+  // DPO = (CxP / Costo Ventas) * 365
+  const dpo = Math.round((cxp / costoVentas) * 365);
+  
+  // CCC = DIO + DSO - DPO
+  const ccc = dio + dso - dpo;
+
+  return { dso, dio, dpo, ccc, cxc, inventario, cxp, ventas, costoVentas };
+}
