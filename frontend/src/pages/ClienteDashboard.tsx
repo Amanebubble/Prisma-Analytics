@@ -15,7 +15,10 @@ export default function ClienteDashboard() {
   return (
     <div className="cliente-dashboard animate-fade-in">
       <div className="dashboard-header">
-        <h1>Principal: <span style={{ fontWeight: 400 }}>Julio 2026</span></h1>
+        <div>
+          <h1>Resumen Ejecutivo</h1>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Cliente Activo: <strong>Lácteos El Salvador S.A.</strong></p>
+        </div>
         <div className="header-actions-group">
           <button className="btn-secondary">
             <RefreshCw size={16} /> Actualizar Datos
