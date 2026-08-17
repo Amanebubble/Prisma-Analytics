@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MessageSquare, ChevronRight, ChevronLeft, Calendar, Filter, Plus } from 'lucide-react';
+import { MessageSquare, ChevronRight, ChevronLeft, Calendar, Filter, Plus, LayoutGrid, CalendarDays } from 'lucide-react';
 import { initialTasks, type AuditTask, type TaskStatus } from '../utils/mockTasks';
 import './Planificacion.css';
 
@@ -13,6 +13,13 @@ const STATUS_COLUMNS: { id: TaskStatus; title: string }[] = [
 export default function Planificacion() {
   const [tasks, setTasks] = useState<AuditTask[]>(initialTasks);
   const [filter, setFilter] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'kanban' | 'calendar'>('kanban');
+
+  // Hardcoded month calendar: August 2025 (Starts on Friday, 31 days)
+  const daysInMonth = 31;
+  const startDayOfWeek = 5; // 0=Sun, 1=Mon... 5=Fri
+  const blankDays = Array.from({ length: startDayOfWeek }, (_, i) => i);
+  const monthDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
   const moveTask = (taskId: string, direction: 'forward' | 'backward') => {
     setTasks(prevTasks => prevTasks.map(task => {
@@ -65,6 +72,22 @@ export default function Planificacion() {
           <h1 className="planificacion-title">Planificación y Asignaciones</h1>
           <p className="planificacion-subtitle">Control del equipo de auditoría y fechas de entrega.</p>
         </div>
+        
+        <div className="view-toggle">
+          <button 
+            className={`toggle-btn ${viewMode === 'kanban' ? 'active' : ''}`}
+            onClick={() => setViewMode('kanban')}
+          >
+            <LayoutGrid size={18} /> Tablero
+          </button>
+          <button 
+            className={`toggle-btn ${viewMode === 'calendar' ? 'active' : ''}`}
+            onClick={() => setViewMode('calendar')}
+          >
+            <CalendarDays size={18} /> Calendario
+          </button>
+        </div>
+
         <div className="header-actions">
           <div className="filters">
             <button 
@@ -92,10 +115,52 @@ export default function Planificacion() {
         </div>
       </div>
 
-      {/* Kanban Board */}
-      <div className="kanban-board">
-        {STATUS_COLUMNS.map((column, colIndex) => {
-          const columnTasks = filteredTasks.filter(t => t.status === column.id);
+      {viewMode === 'calendar' ? (
+        <div className="calendar-view glass animate-fade-in">
+          <div className="calendar-header-row">
+            <h2>Agosto 2025</h2>
+            <div className="calendar-legend">
+              <span className="legend-item"><span className="dot high"></span> Alta Prioridad</span>
+              <span className="legend-item"><span className="dot medium"></span> Media</span>
+              <span className="legend-item"><span className="dot low"></span> Baja</span>
+            </div>
+          </div>
+          
+          <div className="calendar-grid">
+            <div className="weekday-header">Dom</div>
+            <div className="weekday-header">Lun</div>
+            <div className="weekday-header">Mar</div>
+            <div className="weekday-header">Mié</div>
+            <div className="weekday-header">Jue</div>
+            <div className="weekday-header">Vie</div>
+            <div className="weekday-header">Sáb</div>
+
+            {blankDays.map(b => <div key={`blank-${b}`} className="calendar-day empty"></div>)}
+            
+            {monthDays.map(day => {
+              const formattedDate = `2025-08-${day.toString().padStart(2, '0')}`;
+              const dayTasks = filteredTasks.filter(t => t.dueDate === formattedDate);
+              const isToday = day === 15; // Simulated today
+
+              return (
+                <div key={`day-${day}`} className={`calendar-day ${isToday ? 'today' : ''}`}>
+                  <div className="day-number">{day}</div>
+                  <div className="day-tasks-container">
+                    {dayTasks.map(task => (
+                      <div key={task.id} className={`calendar-task-pill priority-${task.priority}`} title={`${task.title} - ${task.client}`}>
+                        {task.assigneeInitials} | {task.title.substring(0, 15)}...
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="kanban-board animate-fade-in">
+          {STATUS_COLUMNS.map((column, colIndex) => {
+            const columnTasks = filteredTasks.filter(t => t.status === column.id);
           
           return (
             <div key={column.id} className="kanban-column glass">
@@ -168,6 +233,7 @@ export default function Planificacion() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }
