@@ -10,6 +10,7 @@ import Analisis from './pages/Analisis';
 import Planificacion from './pages/Planificacion';
 import Historial from './pages/Historial';
 import Reportes from './pages/Reportes';
+import Configuracion from './pages/Configuracion';
 import Clients from './pages/Clients'; // Mantendremos este por si acaso en el submenú
 import ToolkitDrawer from './components/ToolkitDrawer';
 
@@ -32,6 +33,7 @@ function App() {
               <Route path="/planificacion" element={<Planificacion />} />
               <Route path="/historial" element={<Historial />} />
               <Route path="/reportes" element={<Reportes />} />
+              <Route path="/configuracion" element={<Configuracion />} />
               <Route path="/clients" element={<Clients />} />
             </Routes>
           </main>

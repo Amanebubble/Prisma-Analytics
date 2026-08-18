@@ -63,9 +63,9 @@ export default function Sidebar({ onOpenToolkit }: { onOpenToolkit?: () => void 
             <span className="user-name">Juan</span>
           </div>
         </div>
-        <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+        <Link to="/configuracion" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
           <Settings size={18} />
-        </button>
+        </Link>
       </div>
     </aside>
   );
