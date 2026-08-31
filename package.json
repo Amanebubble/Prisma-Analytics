@@ -51,7 +51,8 @@
         "AppImage",
         "deb"
       ],
-      "category": "Office"
+      "category": "Office",
+      "maintainer": "Prisma Analytics <prisma@analytics.app>"
     },
     "nsis": {
       "oneClick": false,
@@ -66,8 +67,8 @@
     "url": "git+https://github.com/Amanebubble/Prisma-Analytics.git"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Prisma Analytics <prisma@analytics.app>",
+  "license": "GPL-3.0",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/Amanebubble/Prisma-Analytics/issues"
