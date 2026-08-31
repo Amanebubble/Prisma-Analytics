@@ -1,11 +1,38 @@
 import { useState } from 'react';
-import { Download, Printer, Settings, FileText, CheckCircle, AlertTriangle, Building } from 'lucide-react';
+import { Download, Printer, Settings, FileText, Building2, Database } from 'lucide-react';
+import { useClient } from '../context/ClientContext';
+import CanvasEditor from '../components/CanvasEditor';
 import './Reportes.css';
 
 export default function Reportes() {
+  const { activeClient, reportDraft, setReportDraft } = useClient();
   const [includeDuPont, setIncludeDuPont] = useState(true);
   const [includeFindings, setIncludeFindings] = useState(true);
   const [signatureReady, setSignatureReady] = useState(false);
+
+  if (!activeClient) {
+    return (
+      <div className="reportes-container fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+          <Building2 size={48} style={{ margin: '0 auto 1rem auto', opacity: 0.5 }} />
+          <h2>Ningún cliente seleccionado</h2>
+          <p>Por favor, ve al Panel Principal y activa un cliente para generar su dictamen ejecutivo.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeClient.hasData) {
+    return (
+      <div className="reportes-container fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+          <Database size={48} style={{ margin: '0 auto 1rem auto', opacity: 0.5 }} />
+          <h2>Esperando estados financieros...</h2>
+          <p>Sube la información de <strong>{activeClient.name}</strong> para generar el dictamen.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="reportes-container fade-in">
@@ -19,110 +46,61 @@ export default function Reportes() {
       <div className="reportes-layout">
         
         {/* Left Side: A4 Preview */}
-        <div className="a4-preview-container">
-          <div className="a4-paper">
-            
-            {/* Document Header */}
-            <div className="doc-header">
-              <div className="doc-logo-area">
-                <Building size={32} color="var(--accent-primary)" />
-                <div className="doc-firm-name">
-                  <h2>PRISMA ANALYTICS</h2>
-                  <p>Auditores y Consultores</p>
-                </div>
-              </div>
-              <div className="doc-meta">
-                <p><strong>Fecha:</strong> 17 de Agosto, 2026</p>
-                <p><strong>Ref:</strong> PA-2026-08-014</p>
-              </div>
-            </div>
-
-            <hr className="doc-divider" />
-
-            {/* Title */}
-            <div className="doc-title">
-              <h1>DICTAMEN DE AUDITORÍA FINANCIERA Y TRIBUTARIA</h1>
-              <p>Al Consejo de Administración de <strong>Lácteos El Salvador S.A.</strong></p>
-            </div>
-
-            {/* Content Body */}
-            <div className="doc-body">
-              <section className="doc-section">
-                <h3>1. Opinión del Auditor</h3>
-                <p>
-                  Hemos auditado los estados financieros anexos de Lácteos El Salvador S.A., que comprenden el balance general al 31 de Julio de 2026, y el estado de resultados correspondiente. En nuestra opinión, los estados financieros presentan razonablemente, en todos los aspectos importantes, la situación financiera de la compañía.
-                </p>
-              </section>
-
-              <section className="doc-section">
-                <h3>2. Resumen de Salud Financiera (Prisma Score)</h3>
-                <div className="doc-score-box">
-                  <div className="score-circle">84/100</div>
-                  <div className="score-details">
-                    <p><strong>Estado General:</strong> <span className="text-success">Saludable</span></p>
-                    <p>La entidad presenta niveles óptimos de liquidez (1.85) y rentabilidad neta (12.4%), superando los promedios del sector industrial.</p>
-                  </div>
-                </div>
-              </section>
-
-              {includeFindings && (
-                <section className="doc-section">
-                  <h3>3. Hallazgos de Auditoría Pre-Hacienda</h3>
-                  <table className="doc-table">
-                    <thead>
-                      <tr>
-                        <th>Área de Revisión</th>
-                        <th>Estado</th>
-                        <th>Observación</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>Bancarización (Art. 62-A)</td>
-                        <td><CheckCircle size={14} color="var(--success)" /> Conforme</td>
-                        <td>Todas las transacciones {'>'} $10,950 cruzadas con bancos.</td>
-                      </tr>
-                      <tr>
-                        <td>Cruce IVA vs Ingresos</td>
-                        <td><CheckCircle size={14} color="var(--success)" /> Conforme</td>
-                        <td>No existen variaciones entre F-07 y Contabilidad.</td>
-                      </tr>
-                      <tr>
-                        <td>Retenciones ISR</td>
-                        <td><AlertTriangle size={14} color="var(--warning)" /> Observación</td>
-                        <td>2 comprobantes con retención calculada fuera de tiempo.</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </section>
-              )}
-
-              {includeDuPont && (
-                <section className="doc-section">
-                  <h3>4. Resumen de Desempeño Operativo (DuPont)</h3>
-                  <p>
-                    El rendimiento sobre el capital (ROE) ha mostrado una tendencia alcista, cerrando en 11.33%. Esto fue impulsado principalmente por una mejora en la Rotación de Activos (reducción de Días de Inventario).
-                  </p>
-                </section>
-              )}
-            </div>
-
-            {/* Signature Area */}
-            <div className="doc-footer">
-              <div className="signature-line">
-                {signatureReady ? (
-                  <span className="digital-signature">Juan Administrador</span>
-                ) : (
-                  <span className="placeholder-signature">(Firma Pendiente)</span>
-                )}
-                <div className="line"></div>
-                <p>Socio Director</p>
-                <p>Prisma Analytics S.A. de C.V.</p>
-                <p>N° J.V.P.P.A.: 12345</p>
-              </div>
-            </div>
-
-          </div>
+        <div className="a4-preview-container" style={{ overflow: 'hidden', padding: 0 }}>
+          <CanvasEditor 
+            initialContent={reportDraft || [
+              {
+                value: 'DICTAMEN DE AUDITORÍA FINANCIERA Y TRIBUTARIA',
+                size: 16,
+                bold: true,
+                rowFlex: 'center' as any,
+              },
+              {
+                value: '\n\nAl Consejo de Administración de ',
+                size: 12,
+              },
+              {
+                value: activeClient.name,
+                size: 12,
+                bold: true,
+              },
+              {
+                value: '\n\n1. Opinión del Auditor\n',
+                size: 14,
+                bold: true,
+              },
+              {
+                value: `Hemos auditado los estados financieros anexos de ${activeClient.name}, que comprenden el balance general al 31 de Julio de 2026, y el estado de resultados correspondiente. En nuestra opinión, los estados financieros presentan razonablemente, en todos los aspectos importantes, la situación financiera de la compañía.\n`,
+                size: 12,
+              },
+              {
+                value: '\n2. Resumen de Salud Financiera\n',
+                size: 14,
+                bold: true,
+              },
+              {
+                value: 'La entidad presenta niveles óptimos de liquidez y rentabilidad, superando los promedios del sector industrial.\n',
+                size: 12,
+              },
+              {
+                value: '\n3. Resumen de Desempeño Operativo\n',
+                size: 14,
+                bold: true,
+              },
+              {
+                value: 'El rendimiento sobre el capital (ROE) ha mostrado una tendencia alcista, impulsado principalmente por una mejora en la Rotación de Activos.\n\n\n\n',
+                size: 12,
+              },
+              {
+                value: signatureReady ? 'Firma: Juan Administrador\nSocio Director\nPrisma Analytics S.A. de C.V.' : '(Firma Pendiente)\nSocio Director\nPrisma Analytics S.A. de C.V.',
+                size: 12,
+                rowFlex: 'center' as any
+              }
+            ]}
+            onChange={(content) => {
+              setReportDraft(content);
+            }}
+          />
         </div>
 
         {/* Right Side: Settings & Export Controls */}

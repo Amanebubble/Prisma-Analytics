@@ -93,6 +93,10 @@ button {
   overflow: hidden;
 }
 
+.app-container.sidebar-collapsed {
+  --sidebar-width: 80px;
+}
+
 .main-content {
   flex: 1;
   display: flex;

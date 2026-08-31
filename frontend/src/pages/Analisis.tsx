@@ -1,43 +1,81 @@
-import { useState } from 'react';
-import { mockFinancialData, getKPIs, getWorkingCapitalMetrics } from '../utils/mockFinancialData';
+import { useState, useEffect } from 'react';
 import DuPontTree from '../components/DuPontTree';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
-} from 'recharts';
-import { TrendingUp, Activity, DollarSign, PieChart, Clock, RefreshCw } from 'lucide-react';
+import { TrendingUp, Activity, DollarSign, PieChart, Building2, Database } from 'lucide-react';
+import { useClient } from '../context/ClientContext';
 import './Analisis.css';
 
 export default function Analisis() {
-  const currentYearData = mockFinancialData.periodos[1];
-  const previousYearData = mockFinancialData.periodos[0];
-  const kpis = getKPIs(currentYearData);
-  const wc = getWorkingCapitalMetrics(currentYearData);
-
+  const { activeClient, activePeriod } = useClient();
   const [activeTab, setActiveTab] = useState<'resumen' | 'vertical' | 'dupont' | 'capital'>('resumen');
+  const [persistedRatios, setPersistedRatios] = useState<any | null>(null);
+  const [summary, setSummary] = useState<any | null>(null);
 
-  // Preparar datos para gráfica comparativa
-  const chartData = [
-    {
-      name: 'Activos Totales',
-      '2024': previousYearData.balance_general.total_activos,
-      '2025': currentYearData.balance_general.total_activos
-    },
-    {
-      name: 'Pasivos Totales',
-      '2024': previousYearData.balance_general.total_pasivos,
-      '2025': currentYearData.balance_general.total_pasivos
-    },
-    {
-      name: 'Ingresos',
-      '2024': previousYearData.estado_resultados.ingresos_ventas,
-      '2025': currentYearData.estado_resultados.ingresos_ventas
-    },
-    {
-      name: 'Utilidad Neta',
-      '2024': previousYearData.estado_resultados.utilidad_neta,
-      '2025': currentYearData.estado_resultados.utilidad_neta
+  useEffect(() => {
+    if (!activeClient) {
+      setPersistedRatios(null);
+      setSummary(null);
+      return;
     }
-  ];
+    try {
+      const { ipcRenderer } = (window as any).require('electron');
+      // Ratios del período activo.
+      ipcRenderer.invoke('get-financial-ratios', {
+        clientId: activeClient.id,
+        periodYear: activePeriod.year,
+        periodMonth: activePeriod.month
+      }).then((result: any) => {
+        setPersistedRatios(result.available ? result : null);
+      });
+      // Resumen real (último período con datos) para el diagnóstico de la página.
+      ipcRenderer.invoke('get-client-summary', activeClient.id).then((res: any) => {
+        setSummary(res?.hasData ? res : null);
+      });
+    } catch (error) {
+      console.warn('No fue posible cargar ratios persistidos', error);
+    }
+  }, [activeClient, activePeriod]);
+
+  if (!activeClient) {
+    return (
+      <div className="analisis-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+          <Building2 size={48} style={{ margin: '0 auto 1rem auto', opacity: 0.5 }} />
+          <h2>Ningún cliente seleccionado</h2>
+          <p>Por favor, ve al Panel Principal y activa un cliente para ver su análisis financiero.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeClient.hasData) {
+    return (
+      <div className="analisis-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+          <Database size={48} style={{ margin: '0 auto 1rem auto', opacity: 0.5 }} />
+          <h2>Esperando estados financieros...</h2>
+          <p>Sube la información de <strong>{activeClient.name}</strong> para generar su análisis.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const sTotals = summary?.totals;
+  const netProfit = persistedRatios?.totals.netIncome ?? sTotals?.netIncome ?? activeClient.income - activeClient.expenses;
+  const persisted = persistedRatios?.ratios;
+  const assets = sTotals?.assets ?? activeClient.assets;
+  const liabilities = sTotals?.liabilities ?? activeClient.liabilities;
+  const equity = sTotals?.equity ?? activeClient.equity;
+  const income = sTotals?.income ?? activeClient.income;
+  const formatRatio = (value: number | null | undefined, suffix = '') => value === null || value === undefined ? 'N/A' : `${value.toFixed(2)}${suffix}`;
+  const liquidez = formatRatio(persisted?.currentRatio ?? (liabilities > 0 ? assets / liabilities : null));
+  const roe = formatRatio(persisted?.roe ?? (equity > 0 ? (netProfit / equity) * 100 : null), '%');
+  const endeudamiento = formatRatio(persisted?.debtToAssets ?? (assets > 0 ? (liabilities / assets) * 100 : null), '%');
+  const margin = formatRatio(persisted?.netMargin ?? summary?.margin ?? (income > 0 ? (netProfit / income) * 100 : null), '%');
+
+  // Agrupar cuentas para Análisis Vertical
+  const activos = activeClient.accounts.filter(a => a.niifCode.startsWith('1'));
+  const pasivos = activeClient.accounts.filter(a => a.niifCode.startsWith('2'));
+  const patrimonio = activeClient.accounts.filter(a => a.niifCode.startsWith('3'));
 
   return (
     <div className="analisis-container">
@@ -46,9 +84,9 @@ export default function Analisis() {
       <div className="analisis-header">
         <div>
           <h1 className="analisis-title">Diagnóstico Financiero</h1>
-          <p className="analisis-subtitle">Basado en estados financieros NIIF - {mockFinancialData.empresa}</p>
+          <p className="analisis-subtitle">Basado en estados financieros NIIF - {activeClient.name}</p>
         </div>
-        <div className="period-badge">Período Activo: 2025 (Simulado)</div>
+         <div className="period-badge">{(persistedRatios || summary) ? `Período con datos: ${summary?.periodYear || activePeriod.year}` : 'Sin datos del período'}</div>
       </div>
 
       {/* KPIs Superiores */}
@@ -57,8 +95,8 @@ export default function Analisis() {
           <div className="kpi-icon"><DollarSign size={24} color="#0ea5e9" /></div>
           <div className="kpi-content">
             <p className="kpi-label">Liquidez Corriente</p>
-            <h3 className="kpi-value">{kpis.liquidez}x</h3>
-            <p className="kpi-desc text-green">Estado Saludable</p>
+            <h3 className="kpi-value">{liquidez}x</h3>
+            <p className="kpi-desc text-green">Capacidad de pago</p>
           </div>
         </div>
 
@@ -66,7 +104,7 @@ export default function Analisis() {
           <div className="kpi-icon"><Activity size={24} color="#10b981" /></div>
           <div className="kpi-content">
             <p className="kpi-label">ROE (Rentabilidad)</p>
-            <h3 className="kpi-value text-green">{kpis.roe}</h3>
+            <h3 className="kpi-value text-green">{roe}</h3>
             <p className="kpi-desc">Retorno sobre el patrimonio</p>
           </div>
         </div>
@@ -75,7 +113,7 @@ export default function Analisis() {
           <div className="kpi-icon"><PieChart size={24} color="#f59e0b" /></div>
           <div className="kpi-content">
             <p className="kpi-label">Nivel de Endeudamiento</p>
-            <h3 className="kpi-value text-orange">{kpis.endeudamiento}</h3>
+            <h3 className="kpi-value text-orange">{endeudamiento}</h3>
             <p className="kpi-desc">Proporción de deuda sobre activos</p>
           </div>
         </div>
@@ -83,9 +121,9 @@ export default function Analisis() {
         <div className="kpi-card glass">
           <div className="kpi-icon"><TrendingUp size={24} color="#8b5cf6" /></div>
           <div className="kpi-content">
-            <p className="kpi-label">Crecimiento Ventas</p>
-            <h3 className="kpi-value text-purple">+17.0%</h3>
-            <p className="kpi-desc text-green">Crecimiento interanual</p>
+            <p className="kpi-label">Margen Neto</p>
+           <h3 className="kpi-value text-purple">{margin}</h3>
+               <p className="kpi-desc text-green">Utilidad sobre ingresos</p>
           </div>
         </div>
       </div>
@@ -121,26 +159,10 @@ export default function Analisis() {
       {/* Contenido Dinámico */}
       <div className="tab-content">
         {activeTab === 'resumen' && (
-          <div className="charts-section animate-fade-in">
-            <div className="chart-card glass">
-              <h3>Crecimiento Interanual (Análisis Horizontal)</h3>
-              <div style={{ width: '100%', height: 350, marginTop: '2rem' }}>
-                <ResponsiveContainer>
-                  <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                    <YAxis axisLine={false} tickLine={false} tickFormatter={(val) => `$${val / 1000}k`} />
-                    <Tooltip 
-                      formatter={(value: any) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value))}
-                      cursor={{fill: 'transparent'}}
-                      contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
-                    />
-                    <Legend iconType="circle" />
-                    <Bar dataKey="2024" fill="#94a3b8" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="2025" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+          <div className="charts-section animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+              <h3>Requiere Base de Datos Histórica</h3>
+              <p>El gráfico de crecimiento interanual se habilitará cuando se implemente la persistencia mensual.</p>
             </div>
           </div>
         )}
@@ -148,13 +170,13 @@ export default function Analisis() {
         {activeTab === 'vertical' && (
           <div className="vertical-analysis-section animate-fade-in">
             <div className="chart-card glass">
-              <h3>Análisis Vertical (2025)</h3>
+              <h3>Análisis Vertical</h3>
               <p className="analisis-subtitle mb-4">Composición porcentual respecto al Total de Activos</p>
               
               <table className="vertical-table">
                 <thead>
                   <tr>
-                    <th>Cuenta Contable</th>
+                    <th>Cuenta Contable (Clasificación NIIF)</th>
                     <th className="text-right">Monto ($)</th>
                     <th className="text-right">Peso Vertical (%)</th>
                   </tr>
@@ -163,46 +185,48 @@ export default function Analisis() {
                   <tr className="table-section-header">
                     <td colSpan={3}>ACTIVOS</td>
                   </tr>
-                  {currentYearData.balance_general.desglose_activos.map((item: any, idx: number) => (
+                  {activos.map((item, idx) => (
                     <tr key={`act-${idx}`}>
-                      <td>{item.cuenta}</td>
-                      <td className="text-right">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(item.monto)}</td>
+                      <td>{item.originalName} <span style={{ fontSize: '0.8rem', color: '#64748b' }}>({item.niifCode} - {item.niifName})</span></td>
+                      <td className="text-right">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(item.originalBalance)}</td>
                       <td className="text-right font-bold text-blue">
-                        {((item.monto / currentYearData.balance_general.total_activos) * 100).toFixed(1)}%
+                        {activeClient.assets > 0 ? ((item.originalBalance / activeClient.assets) * 100).toFixed(1) : 0}%
                       </td>
                     </tr>
                   ))}
                   <tr className="table-total">
                     <td>TOTAL ACTIVOS</td>
-                    <td className="text-right">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(currentYearData.balance_general.total_activos)}</td>
+                    <td className="text-right">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(activeClient.assets)}</td>
                     <td className="text-right font-bold">100.0%</td>
                   </tr>
 
                   <tr className="table-section-header">
                     <td colSpan={3}>PASIVOS Y PATRIMONIO</td>
                   </tr>
-                  {currentYearData.balance_general.desglose_pasivos.map((item: any, idx: number) => (
+                  {pasivos.map((item, idx) => (
                     <tr key={`pas-${idx}`}>
-                      <td>{item.cuenta}</td>
-                      <td className="text-right">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(item.monto)}</td>
+                      <td>{item.originalName} <span style={{ fontSize: '0.8rem', color: '#64748b' }}>({item.niifCode} - {item.niifName})</span></td>
+                      <td className="text-right">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(item.originalBalance)}</td>
                       <td className="text-right font-bold text-orange">
-                        {((item.monto / currentYearData.balance_general.total_activos) * 100).toFixed(1)}%
+                        {activeClient.assets > 0 ? ((item.originalBalance / activeClient.assets) * 100).toFixed(1) : 0}%
                       </td>
                     </tr>
                   ))}
-                  {currentYearData.balance_general.desglose_patrimonio.map((item: any, idx: number) => (
+                  {patrimonio.map((item, idx) => (
                     <tr key={`pat-${idx}`}>
-                      <td>{item.cuenta}</td>
-                      <td className="text-right">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(item.monto)}</td>
+                      <td>{item.originalName} <span style={{ fontSize: '0.8rem', color: '#64748b' }}>({item.niifCode} - {item.niifName})</span></td>
+                      <td className="text-right">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(item.originalBalance)}</td>
                       <td className="text-right font-bold text-green">
-                        {((item.monto / currentYearData.balance_general.total_activos) * 100).toFixed(1)}%
+                        {activeClient.assets > 0 ? ((item.originalBalance / activeClient.assets) * 100).toFixed(1) : 0}%
                       </td>
                     </tr>
                   ))}
                   <tr className="table-total">
                     <td>TOTAL PASIVOS + PATRIMONIO</td>
-                    <td className="text-right">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(currentYearData.balance_general.total_pasivos + currentYearData.balance_general.total_patrimonio)}</td>
-                    <td className="text-right font-bold">100.0%</td>
+                    <td className="text-right">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(activeClient.liabilities + activeClient.equity)}</td>
+                    <td className="text-right font-bold">
+                      {activeClient.assets > 0 ? (((activeClient.liabilities + activeClient.equity) / activeClient.assets) * 100).toFixed(1) : 0}%
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -214,61 +238,29 @@ export default function Analisis() {
           <div className="animate-fade-in">
             <DuPontTree 
               data={{
-                utilidadNeta: currentYearData.estado_resultados.utilidad_neta,
-                ventas: currentYearData.estado_resultados.ingresos_ventas,
-                activos: currentYearData.balance_general.total_activos,
-                patrimonio: currentYearData.balance_general.total_patrimonio
+                utilidadNeta: netProfit,
+                ventas: activeClient.income,
+                activos: activeClient.assets,
+                patrimonio: activeClient.equity
               }} 
             />
           </div>
         )}
 
         {activeTab === 'capital' && (
-          <div className="capital-section animate-fade-in">
-            <div className="chart-card glass">
-              <div className="capital-header">
-                <h3>Ciclo de Conversión de Efectivo (CCC)</h3>
-                <p>Mide cuánto tiempo tarda la empresa en convertir sus inversiones en inventario y otros recursos en flujos de efectivo por ventas.</p>
-              </div>
-
-              <div className="ccc-visualizer">
-                <div className="ccc-metric ccc-dio">
-                  <div className="ccc-icon"><RefreshCw size={20}/></div>
-                  <div className="ccc-info">
-                    <span className="ccc-label">Días de Inventario (DIO)</span>
-                    <span className="ccc-value">{wc.dio} días</span>
-                  </div>
-                </div>
-                <div className="ccc-operator">+</div>
-                <div className="ccc-metric ccc-dso">
-                  <div className="ccc-icon"><Clock size={20}/></div>
-                  <div className="ccc-info">
-                    <span className="ccc-label">Días de Cobro (DSO)</span>
-                    <span className="ccc-value">{wc.dso} días</span>
-                  </div>
-                </div>
-                <div className="ccc-operator">-</div>
-                <div className="ccc-metric ccc-dpo">
-                  <div className="ccc-icon"><TrendingUp size={20}/></div>
-                  <div className="ccc-info">
-                    <span className="ccc-label">Días de Pago (DPO)</span>
-                    <span className="ccc-value">{wc.dpo} días</span>
-                  </div>
-                </div>
-                <div className="ccc-operator">=</div>
-                <div className="ccc-metric ccc-total">
-                  <div className="ccc-info">
-                    <span className="ccc-label">Ciclo Efectivo</span>
-                    <span className="ccc-value text-blue">{wc.ccc} días</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="ccc-insight">
-                <strong>💡 Diagnóstico Automático: </strong> 
-                El dinero de la empresa está "atrapado" en la operación por <strong>{wc.ccc} días</strong> antes de volverse efectivo real. 
-                {wc.ccc > 60 ? " Es un ciclo alto, se recomienda negociar más días con proveedores o acelerar los cobros a clientes para liberar liquidez." : " Es un ciclo saludable, indicando una buena gestión de inventarios y cobros."}
-              </div>
+          <div className="capital-section animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
+             <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+               <h3>Capital de Trabajo y Ciclo de Efectivo</h3>
+               {persisted?.cashConversionCycle === null || persisted?.cashConversionCycle === undefined ? (
+                 <p>Se requieren cuentas de inventario, cuentas por cobrar, proveedores, ingresos y costos.</p>
+               ) : (
+                 <div className="kpi-grid" style={{ marginTop: '1.5rem', width: '100%' }}>
+                   <div className="kpi-card glass"><p className="kpi-label">Capital de trabajo</p><h3 className="kpi-value">${Number(persistedRatios.totals.workingCapital).toLocaleString('es-SV')}</h3></div>
+                   <div className="kpi-card glass"><p className="kpi-label">Días de cobro</p><h3 className="kpi-value">{formatRatio(persisted.daysSalesOutstanding, ' días')}</h3></div>
+                   <div className="kpi-card glass"><p className="kpi-label">Días de inventario</p><h3 className="kpi-value">{formatRatio(persisted.daysInventoryOutstanding, ' días')}</h3></div>
+                   <div className="kpi-card glass"><p className="kpi-label">Ciclo de efectivo</p><h3 className="kpi-value">{formatRatio(persisted.cashConversionCycle, ' días')}</h3></div>
+                 </div>
+               )}
             </div>
           </div>
         )}

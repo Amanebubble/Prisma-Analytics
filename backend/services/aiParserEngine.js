@@ -4,17 +4,24 @@ const axios = require('axios');
 const FormData = require('form-data');
 const { GoogleGenAI } = require('@google/genai');
 
-const LLAMA_KEY = process.env.LLAMA_CLOUD_API_KEY;
-const GEMINI_KEY = process.env.GEMINI_API_KEY;
+let LLAMA_KEY = process.env.LLAMA_CLOUD_API_KEY;
+let GEMINI_KEY = process.env.GEMINI_API_KEY;
 
 // Inicializar el cliente usando la clave AQ...
-const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
+let ai = GEMINI_KEY ? new GoogleGenAI({ apiKey: GEMINI_KEY }) : null;
+
+function setApiKeys({ llamaParseKey, geminiKey } = {}) {
+  if (llamaParseKey !== undefined) LLAMA_KEY = llamaParseKey || '';
+  if (geminiKey !== undefined) GEMINI_KEY = geminiKey || '';
+  ai = GEMINI_KEY ? new GoogleGenAI({ apiKey: GEMINI_KEY }) : null;
+}
 
 /**
  * Fase 1: Extracción Bruta usando LlamaParse API
  */
 async function extractWithLlamaParse(filePath) {
   try {
+    if (!LLAMA_KEY) throw new Error('No hay API Key de LlamaParse configurada.');
     console.log('[Prisma Analytics] Iniciando LlamaParse API...');
     const formData = new FormData();
     formData.append('file', fs.createReadStream(filePath));
@@ -59,6 +66,7 @@ async function extractWithLlamaParse(filePath) {
  */
 async function extractWithGeminiFlash(filePath) {
   try {
+    if (!ai) throw new Error('No hay API Key de Gemini configurada.');
     console.log('[Prisma Analytics] Activando Fallback con Gemini Flash...');
     
     const fileData = fs.readFileSync(filePath);
@@ -93,14 +101,20 @@ async function extractWithGeminiFlash(filePath) {
  * Fase 2: Estructurar Markdown a JSON Validado usando Gemini
  */
 async function structurizeWithGemini(markdownContent) {
+  if (!ai) throw new Error('No hay API Key de Gemini configurada.');
   const prompt = `
-  Basado en el siguiente texto de un Estado Financiero, extrae los datos y organízalos siguiendo este esquema JSON estricto.
+  Basado en el siguiente texto de uno o varios Estados Financieros, extrae los datos y organízalos siguiendo este esquema JSON estricto.
   Si el documento es un balance de comprobación (trial balance), clasifícalo en activos, pasivos y patrimonio.
+  Si detectas varios períodos o estados comparativos, devuelve cada corte separado dentro de "periodos". Nunca mezcles saldos de períodos distintos.
   
   Esquema esperado:
   {
     "empresa": "Nombre de la empresa",
     "periodo": "Año o periodo",
+    "periodo_inicio": "YYYY-MM-DD o vacío",
+    "periodo_fin": "YYYY-MM-DD o vacío",
+    "tipo_documento": "balance|trial_balance|results|equity_changes|cash_flow",
+    "moneda": "USD",
     "activos": [
       { "concepto": "Nombre de la cuenta", "monto": 0.00 }
     ],
@@ -112,7 +126,18 @@ async function structurizeWithGemini(markdownContent) {
     "patrimonio": [
       { "concepto": "Nombre cuenta", "monto": 0.00 }
     ],
-    "total_patrimonio": 0.00
+    "total_patrimonio": 0.00,
+    "periodos": [
+      {
+        "periodo": "YYYY-MM",
+        "periodo_inicio": "YYYY-MM-DD o vacío",
+        "periodo_fin": "YYYY-MM-DD o vacío",
+        "tipo_documento": "balance|trial_balance|results|equity_changes|cash_flow",
+        "activos": [], "total_activos": 0,
+        "pasivos": [], "total_pasivos": 0,
+        "patrimonio": [], "total_patrimonio": 0
+      }
+    ]
   }
 
   Texto del documento:
@@ -127,8 +152,110 @@ async function structurizeWithGemini(markdownContent) {
     }
   });
   
-  const jsonText = response.text;
-  return JSON.parse(jsonText);
+  const jsonText = typeof response.text === 'function' ? response.text() : response.text;
+  return JSON.parse(String(jsonText).replace(/^```json\s*/, '').replace(/```\s*$/, '').trim());
+}
+
+/**
+ * Estructura declaraciones y libros IVA sin confundirlos con un estado financiero.
+ * Los campos pueden quedar en cero cuando el documento no los contiene.
+ */
+async function structurizeIvaWithGemini(markdownContent, documentType) {
+  if (!ai) throw new Error('No hay API Key de Gemini configurada.');
+  const prompt = `
+Eres un auditor fiscal salvadoreño. Extrae del documento IVA los totales visibles y devuelve SOLO JSON válido.
+Tipo de documento: ${documentType}
+
+  Usa exactamente este esquema:
+{
+  "empresa": "",
+  "periodo": "YYYY-MM",
+  "moneda": "USD",
+  "tipo_documento": "${documentType}",
+  "ventas": 0,
+  "compras": 0,
+  "debito_fiscal": 0,
+  "credito_fiscal": 0,
+  "impuesto_declarado": 0,
+  "retenciones": 0,
+  "documento_identificado": "",
+  "observaciones": []
+}
+
+Reglas:
+- Usa únicamente valores presentes en el documento; no inventes cifras.
+- Convierte montos a números sin separadores de miles.
+- Para libros de ventas, ventas es el total de ventas del período.
+- Para libros de compras, compras es el total de compras del período.
+- Si no puedes identificar un total, usa 0 y explica la limitación en observaciones.
+
+Texto extraído:
+${markdownContent}
+  `;
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-flash-latest',
+    contents: prompt,
+    config: { responseMimeType: 'application/json' }
+  });
+
+  const jsonText = typeof response.text === 'function' ? response.text() : response.text;
+  return JSON.parse(String(jsonText).replace(/^```json\s*/, '').replace(/```\s*$/, '').trim());
+}
+
+async function processIvaDocumentWithAI(filePath, documentType) {
+  let markdown;
+  try {
+    markdown = await extractWithLlamaParse(filePath);
+  } catch (error) {
+    markdown = await extractWithGeminiFlash(filePath);
+  }
+
+  return structurizeIvaWithGemini(markdown, documentType);
+}
+
+async function structurizeBankWithGemini(markdownContent) {
+  if (!ai) throw new Error('No hay API Key de Gemini configurada.');
+  const prompt = `
+Eres un auditor financiero. Extrae movimientos bancarios del siguiente documento y devuelve SOLO JSON válido.
+Usa este esquema:
+{
+  "empresa": "",
+  "periodo": "YYYY-MM",
+  "moneda": "USD",
+  "banco": "",
+  "cuenta_bancaria": "",
+  "movimientos": [
+    { "fecha": "YYYY-MM-DD", "descripcion": "", "referencia": "", "debito": 0, "credito": 0, "saldo": 0 }
+  ],
+  "observaciones": []
+}
+Reglas:
+- No inventes movimientos ni montos.
+- Convierte separadores de miles a números.
+- Si no existe una columna, usa una cadena vacía o cero.
+- Conserva débitos y créditos separados.
+
+Texto extraído:
+${markdownContent}
+  `;
+  const response = await ai.models.generateContent({
+    model: 'gemini-flash-latest',
+    contents: prompt,
+    config: { responseMimeType: 'application/json' }
+  });
+  const jsonText = typeof response.text === 'function' ? response.text() : response.text;
+  return JSON.parse(String(jsonText).replace(/^```json\s*/, '').replace(/```\s*$/, '').trim());
+}
+
+async function processBankDocumentWithAI(filePath) {
+  let markdown;
+  try {
+    markdown = await extractWithLlamaParse(filePath);
+  } catch (error) {
+    markdown = await extractWithGeminiFlash(filePath);
+  }
+  return structurizeBankWithGemini(markdown);
 }
 
 /**
@@ -173,11 +300,16 @@ async function processFinancialDocumentWithAI(filePath) {
   }
 
   const rawJson = await structurizeWithGemini(markdown);
-  const validatedJson = validateAccountingEquation(rawJson);
+  const periods = Array.isArray(rawJson.periodos) && rawJson.periodos.length > 0 ? rawJson.periodos : [rawJson];
+  const validatedJson = validateAccountingEquation({ ...rawJson, ...periods[0] });
+  validatedJson.periodos = periods.map(period => validateAccountingEquation({ ...rawJson, ...period }));
 
   return validatedJson;
 }
 
 module.exports = {
-  processFinancialDocumentWithAI
+  processFinancialDocumentWithAI,
+  processIvaDocumentWithAI,
+  processBankDocumentWithAI,
+  setApiKeys
 };

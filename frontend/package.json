@@ -12,6 +12,9 @@
   "dependencies": {
     "@cortex-js/compute-engine": "^0.105.0",
     "@google/generative-ai": "^0.24.1",
+    "@hufe921/canvas-editor": "^1.0.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.31.0",
     "mathjs": "^15.2.0",
     "mathlive": "^0.110.0",

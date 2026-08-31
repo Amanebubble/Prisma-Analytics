@@ -3,6 +3,7 @@ const path = require('path');
 const xlsx = require('xlsx');
 const pdfParse = require('pdf-parse');
 const { dbAsync } = require('../database/db');
+const { persistAccountsBalances } = require('./financialPayload');
 
 /**
  * Procesa un archivo DTE JSON (Facturación Electrónica)
@@ -72,69 +73,65 @@ const { processFinancialDocumentWithAI } = require('./aiParserEngine');
  * @param {number} year Año fiscal
  * @param {string} type Tipo de documento: 'balance' o 'results'
  */
-async function processFinancialExcel(filePath, clientId, year, type) {
+async function analyzeFinancialDocument(filePath) {
   try {
-    // 1. Extraer y validar datos matemáticamente con la IA
+    // La extracción PDF se prepara sin guardar ni emitir conclusiones de auditoría.
     const aiValidatedData = await processFinancialDocumentWithAI(filePath);
     
     // Obtener catálogo NIIF de la base de datos
     const catalog = await dbAsync.all('SELECT * FROM niif_catalog');
     
-    // 2. Mapear las cuentas extraídas por la IA a NIIF usando nuestro mapeador
-    // El AI devuelve: { activos: [{concepto, monto}], pasivos: [], patrimonio: [] }
-    const allAccounts = [
-      ...(aiValidatedData.activos || []),
-      ...(aiValidatedData.pasivos || []),
-      ...(aiValidatedData.patrimonio || [])
-    ];
-    
-    const mappedData = allAccounts.map(acc => {
-      const accountName = String(acc.concepto || '');
-      const balance = parseFloat(acc.monto) || 0;
-      
-      const niifCode = mapAccountToNIIF(accountName, catalog);
-      const niifInfo = catalog.find(c => c.code === niifCode) || { name: 'Sin Mapear', type: 'unknown' };
-
-      return {
-        originalName: accountName,
-        originalBalance: balance,
-        niifCode: niifCode,
-        niifName: niifInfo.name,
-        niifType: niifInfo.type,
-        rawData: acc
-      };
-    });
-
-    // Guardar el payload estructurado con banderas matemáticas
-    const finalPayload = {
-      aiValidation: {
-        cuadra: aiValidatedData.cuadra,
-        diferencia: aiValidatedData.diferencia,
-        totalActivos: aiValidatedData.total_activos,
-        totalPasivosYPatrimonio: (aiValidatedData.total_pasivos + aiValidatedData.total_patrimonio)
-      },
-      cuentas: mappedData
+    // 2. Mapear cada período de forma independiente.
+    const mapPeriod = period => {
+      const allAccounts = [
+        ...(period.activos || []),
+        ...(period.pasivos || []),
+        ...(period.patrimonio || [])
+      ];
+      return allAccounts.map(acc => {
+        const accountName = String(acc.concepto || '');
+        const balance = parseFloat(acc.monto) || 0;
+        const niifCode = mapAccountToNIIF(accountName, catalog);
+        const niifInfo = catalog.find(c => c.code === niifCode) || { name: 'Sin Mapear', type: 'unknown' };
+        return { originalName: accountName, originalBalance: balance, niifCode, niifName: niifInfo.name, niifType: niifInfo.type, rawData: acc };
+      });
     };
-    
-    const rawDataJson = JSON.stringify(finalPayload);
-
-    const result = await dbAsync.run(
-      'INSERT INTO financial_statements (client_id, period_year, type, raw_data_json) VALUES (?, ?, ?, ?)',
-      [clientId, year, type, rawDataJson]
-    );
+    const sourcePeriods = aiValidatedData.periodos || [aiValidatedData];
+    const mappedPeriods = sourcePeriods.map(period => ({
+      ...period,
+      mapped_data: mapPeriod(period)
+    }));
+    const mappedData = mappedPeriods[0]?.mapped_data || [];
 
     return { 
       success: true, 
-      id: result.lastID, 
       records_count: mappedData.length, 
       mapped_data: mappedData,
-      ai_status: aiValidatedData.cuadra ? 'OK' : 'DESCUADRE',
-      ai_diff: aiValidatedData.diferencia
+      periods: mappedPeriods,
+      empresa: aiValidatedData.empresa || '',
+      periodo: aiValidatedData.periodo || '',
+      periodo_inicio: aiValidatedData.periodo_inicio || '',
+      periodo_fin: aiValidatedData.periodo_fin || '',
+      moneda: aiValidatedData.moneda || 'USD',
+      tipo_documento: aiValidatedData.tipo_documento || '',
+      ai_status: 'PENDIENTE_REVISION',
+      ai_diff: 0
     };
   } catch (error) {
     console.error('Error procesando Documento Financiero con IA:', error);
     throw new Error('Fallo al procesar archivo con IA: ' + error.message);
   }
+}
+
+async function processFinancialExcel(filePath, clientId, year, type) {
+  const analysis = await analyzeFinancialDocument(filePath);
+  const result = await dbAsync.run(
+    'INSERT INTO financial_statements (client_id, period_year, type, raw_data_json) VALUES (?, ?, ?, ?)',
+    [clientId, year, type, JSON.stringify({ metadata: analysis, cuentas: analysis.mapped_data })]
+  );
+  // Consolidar cuentas y saldos en account_balances para que sean la fuente única.
+  await persistAccountsBalances(clientId, year, null, type, analysis.mapped_data, result.lastID);
+  return { ...analysis, id: result.lastID };
 }
 
 /**
@@ -156,5 +153,6 @@ async function processPdfText(filePath) {
 module.exports = {
   processDteJson,
   processFinancialExcel,
+  analyzeFinancialDocument,
   processPdfText
 };

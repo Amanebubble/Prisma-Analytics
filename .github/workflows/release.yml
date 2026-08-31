@@ -1,0 +1,54 @@
+name: Build instaladores
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            buildArgs: --win nsis
+            artifact: windows
+          - os: ubuntu-latest
+            buildArgs: --linux AppImage deb
+            artifact: linux
+          - os: macos-latest
+            buildArgs: --mac dmg
+            artifact: macos
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Installar backend (raíz)
+        run: npm ci
+
+      - name: Instalar frontend
+        run: npm ci --prefix frontend
+
+      - name: Compilar frontend
+        run: npm run build
+
+      - name: Empaquetar
+        run: npx electron-builder ${{ matrix.buildArgs }} --publish never
+
+      - name: Subir artefactos
+        uses: actions/upload-artifact@v4
+        with:
+          name: instalador-${{ matrix.artifact }}
+          path: |
+            release/*.exe
+            release/*.AppImage
+            release/*.deb
+            release/*.dmg
+          if-no-files-found: warn

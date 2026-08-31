@@ -1,5 +1,7 @@
-import { RefreshCw, FileText, ArrowUpRight, ArrowDownRight, CheckCircle, AlertTriangle } from 'lucide-react';
+import { RefreshCw, FileText, ArrowUpRight, CheckCircle, AlertTriangle, Building2, Database, Trash2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { useClient } from '../context/ClientContext';
+import { useState, useEffect } from 'react';
 import './ClienteDashboard.css';
 
 const chartData = [
@@ -12,14 +14,66 @@ const chartData = [
 ];
 
 export default function ClienteDashboard() {
+  const { activeClient, resetClientData } = useClient();
+  const [summary, setSummary] = useState<any>(null);
+
+  useEffect(() => {
+    if (!activeClient) { setSummary(null); return; }
+    try {
+      const { ipcRenderer } = (window as any).require('electron');
+      ipcRenderer.invoke('get-client-summary', activeClient.id).then((res: any) => {
+        setSummary(res?.hasData ? res : null);
+      });
+    } catch (e) {
+      console.warn('No fue posible cargar el resumen', e);
+    }
+  }, [activeClient]);
+
+  const assets = summary?.totals?.assets ?? 0;
+  const liabilities = summary?.totals?.liabilities ?? 0;
+  const margin = summary?.margin ?? 0;
+  const score = summary?.score ?? 0;
+
+  if (!activeClient) {
+    return (
+      <div className="cliente-dashboard animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+          <Building2 size={48} style={{ margin: '0 auto 1rem auto', opacity: 0.5 }} />
+          <h2>Ningún cliente seleccionado</h2>
+          <p>Por favor, ve al Panel Principal y activa un cliente para ver su resumen ejecutivo.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeClient.hasData) {
+    return (
+      <div className="cliente-dashboard animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+          <Database size={48} style={{ margin: '0 auto 1rem auto', opacity: 0.5 }} />
+          <h2>Esperando estados financieros...</h2>
+          <p>El cliente <strong>{activeClient.name}</strong> aún no tiene datos cargados.</p>
+          <p style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>Ve a la sección "Carga de Datos" en el menú izquierdo para subir el archivo Excel.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="cliente-dashboard animate-fade-in">
       <div className="dashboard-header">
         <div>
           <h1>Resumen Ejecutivo</h1>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Cliente Activo: <strong>Lácteos El Salvador S.A.</strong></p>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Cliente Activo: <strong>{activeClient.name}</strong></p>
         </div>
         <div className="header-actions-group">
+          <button className="btn-secondary" style={{ color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }} onClick={() => {
+            if(window.confirm('¿Estás seguro de que deseas eliminar todos los datos cargados de este cliente?')) {
+              resetClientData(activeClient.id);
+            }
+          }}>
+            <Trash2 size={16} /> Limpiar Datos
+          </button>
           <button className="btn-secondary">
             <RefreshCw size={16} /> Actualizar Datos
           </button>
@@ -40,11 +94,11 @@ export default function ClienteDashboard() {
             
             <div className="gauge-container">
               <div className="gauge-arc"></div>
-              <div className="gauge-needle" style={{ transform: 'rotate(50deg)' }}></div>
+              <div className="gauge-needle" style={{ transform: `rotate(${(score / 100) * 180 - 90}deg)` }}></div>
               <div className="gauge-center"></div>
               <div className="gauge-value">
-                <span className="score-num">84</span><span className="score-max"> / 100</span>
-                <span className="score-label">Saludable</span>
+                <span className="score-num">{score}</span><span className="score-max"> / 100</span>
+                <span className="score-label">{score >= 70 ? 'Saludable' : score >= 40 ? 'Precaución' : 'Peligro'}</span>
               </div>
             </div>
 
@@ -64,18 +118,29 @@ export default function ClienteDashboard() {
             <div className="risk-grid">
               <div className="risk-row">
                 <span className="risk-label">Liquidez</span>
-                <div className="risk-badge green">Verde</div>
-                <div className="risk-badge green">Verde<br/><small>Saludable</small></div>
+                {liabilities > 0 && (assets / liabilities) >= 1.5 ? (
+                  <div className="risk-badge green">Verde<br/><small>Saludable</small></div>
+                ) : (
+                  <div className="risk-badge yellow">Amarillo<br/><small>Precaución</small></div>
+                )}
               </div>
               <div className="risk-row">
                 <span className="risk-label">Rentabilidad</span>
-                <div className="risk-badge green">Verde</div>
-                <div className="risk-badge green">Verde<br/><small>Saludable</small></div>
+                {margin >= 10 ? (
+                  <div className="risk-badge green">Verde<br/><small>Saludable</small></div>
+                ) : margin > 0 ? (
+                  <div className="risk-badge yellow">Amarillo<br/><small>Precaución</small></div>
+                ) : (
+                  <div className="risk-badge red" style={{ background: 'var(--danger)', color: 'white', padding: '0.25rem 0.5rem', borderRadius: '4px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 600 }}>Rojo<br/><small>Pérdidas</small></div>
+                )}
               </div>
               <div className="risk-row">
                 <span className="risk-label">Solvencia</span>
-                <div className="risk-badge yellow">Amarillo</div>
-                <div className="risk-badge yellow">Amarillo<br/><small>Precaución</small></div>
+                {assets > 0 && (liabilities / assets) <= 0.5 ? (
+                  <div className="risk-badge green">Verde<br/><small>Saludable</small></div>
+                ) : (
+                  <div className="risk-badge yellow">Amarillo<br/><small>Precaución</small></div>
+                )}
               </div>
             </div>
             
@@ -98,11 +163,12 @@ export default function ClienteDashboard() {
             <div className="dashboard-card kpi-card">
               <span className="kpi-title">Liquidez Corriente</span>
               <div className="kpi-main">
-                <span className="kpi-value">1.85</span>
-                <span className="kpi-delta positive"><ArrowUpRight size={14}/> 3%</span>
+                <span className="kpi-value">
+                  {liabilities > 0 ? (assets / liabilities).toFixed(2) : 'N/A'}x
+                </span>
               </div>
               <div className="kpi-footer">
-                <span className="kpi-trend positive"><ArrowUpRight size={14}/> 3%</span>
+                <span className="kpi-trend positive"><ArrowUpRight size={14}/> Datos Reales</span>
                 <span className="kpi-target">Meta &gt; 1.50</span>
               </div>
             </div>
@@ -110,11 +176,10 @@ export default function ClienteDashboard() {
             <div className="dashboard-card kpi-card">
               <span className="kpi-title">Margen Neto</span>
               <div className="kpi-main">
-                <span className="kpi-value">12.4%</span>
-                <span className="kpi-delta positive"><ArrowUpRight size={14}/> 1.1%</span>
+                <span className="kpi-value">{margin}%</span>
               </div>
               <div className="kpi-footer">
-                <span className="kpi-trend positive"><ArrowUpRight size={14}/> 1.1%</span>
+                <span className="kpi-trend positive"><ArrowUpRight size={14}/> Datos Reales</span>
                 <span className="kpi-target">Sector: 10%</span>
               </div>
             </div>
@@ -122,11 +187,12 @@ export default function ClienteDashboard() {
             <div className="dashboard-card kpi-card">
               <span className="kpi-title">Endeudamiento Activos</span>
               <div className="kpi-main">
-                <span className="kpi-value">42%</span>
-                <span className="kpi-delta negative"><ArrowDownRight size={14}/> 0.5%</span>
+                <span className="kpi-value">
+                  {assets > 0 ? ((liabilities / assets) * 100).toFixed(1) : 0}%
+                </span>
               </div>
               <div className="kpi-footer">
-                <span className="kpi-trend negative"><ArrowDownRight size={14}/> 0.5%</span>
+                <span className="kpi-trend positive"><ArrowUpRight size={14}/> Datos Reales</span>
                 <span className="kpi-target">Límite 50%</span>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType, type Schema } from '@google/generative-ai';
 
 export interface MappedAccount {
   originalName: string;
@@ -10,12 +10,17 @@ export interface MappedAccount {
 export interface AIResponse {
   success: boolean;
   mapped_data?: MappedAccount[];
-  ai_status?: string;
-  ai_diff?: number;
+  empresa?: string;
+  periodo?: string;
+  periodo_inicio?: string;
+  periodo_fin?: string;
+  naturaleza_periodo?: string;
+  tipo_documento?: string;
+  moneda?: string;
   error?: string;
 }
 
-export const processFinancialDataWithAI = async (csvData: string): Promise<AIResponse> => {
+export const processFinancialDataWithAI = async (csvData: string, statementType = 'balance'): Promise<AIResponse> => {
   const apiKey = localStorage.getItem('geminiKey');
   
   if (!apiKey) {
@@ -27,62 +32,91 @@ export const processFinancialDataWithAI = async (csvData: string): Promise<AIRes
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
 
     const prompt = `
 Eres un Auditor Financiero experto en NIIF (Normas Internacionales de Información Financiera).
-Te entregaré un texto extraído de un archivo Excel que contiene un Balance General o Estado de Resultados con sus cuentas y saldos (en formato CSV).
+Tu tarea es analizar un documento financiero en formato CSV y mapear cada cuenta contable al catálogo estándar NIIF.
+Tipo de documento sugerido por el auditor: ${statementType}. Detecta el tipo real si el contenido indica otro.
 
-Tu tarea es:
-1. Extraer cada cuenta contable y su saldo. Si el saldo es negativo (ej. depreciaciones, gastos), consérvalo negativo.
-2. Mapear cada cuenta extraída a una clasificación NIIF básica. Puedes usar los siguientes códigos/nombres como guía o generar el más adecuado:
-   - "11" -> "Efectivo y Equivalentes de Efectivo"
-   - "12" -> "Cuentas por Cobrar"
-   - "13" -> "Inventarios"
-   - "14" -> "Propiedad, Planta y Equipo"
-   - "21" -> "Cuentas por Pagar"
-   - "22" -> "Préstamos Bancarios a Corto Plazo"
-   - "31" -> "Capital Social"
-   - "41" -> "Ingresos Operativos"
-   - "51" -> "Costos Operativos"
-   - "61" -> "Gastos Operativos"
-   Si no estás seguro, asigna "Unmapped" como código.
+Reglas:
+1. Analiza cuidadosamente la naturaleza de la cuenta basándote en su nombre.
+2. Asigna el código NIIF que mejor corresponda:
+   - 11 a 19: Activos
+   - 21 a 29: Pasivos
+   - 31 a 39: Patrimonio
+   - 41 a 49: Ingresos
+   - 51 a 69: Costos y Gastos
+3. Si una cuenta es de orden o no es financiera, clasifícala como "Unmapped" o usa el código NIIF más cercano si aplica.
+4. Identifica la empresa, período de cierre, tipo de documento y moneda visibles en el archivo.
+5. Devuelve los datos de las cuentas sin realizar cálculos matemáticos ni sumatorias.
 
-3. Verifica si se cumple la ecuación contable básica (Activo = Pasivo + Patrimonio).
-   Si los datos entregados no son un balance completo, ignora esta verificación y marca el status como "OK" y diff como 0.
-   Si sí es un balance completo y no cuadra, indica "DESCUADRE" y la diferencia.
+Formato de Respuesta:
+Debes devolver estrictamente un objeto JSON con estas propiedades:
+- empresa: nombre de la empresa detectada, o cadena vacía si no aparece.
+- periodo: período detectado en formato YYYY-MM, o cadena vacía si no aparece.
+- periodo_inicio: fecha inicial visible en formato YYYY-MM-DD, o cadena vacía.
+- periodo_fin: fecha final visible en formato YYYY-MM-DD, o cadena vacía.
+- naturaleza_periodo: point_in_time para balances o range para resultados/flujo.
+- tipo_documento: uno de balance, trial_balance, results, equity_changes o cash_flow.
+- moneda: código de moneda detectado, por ejemplo USD.
+- mapped_data: array de objetos con las propiedades:
+- originalName: El nombre de la cuenta en el archivo original.
+- originalBalance: El saldo de la cuenta (número).
+- niifCode: El código NIIF asignado (ej. "11").
+- niifName: El nombre estándar NIIF de la cuenta (ej. "Efectivo y Equivalentes").
 
-DEBES DEVOLVER ESTRICTAMENTE UN OBJETO JSON VÁLIDO con la siguiente estructura (NO devuelvas formato markdown, solo el JSON raw):
-{
-  "mapped_data": [
-    {
-      "originalName": "string",
-      "originalBalance": number,
-      "niifCode": "string",
-      "niifName": "string"
-    }
-  ],
-  "ai_status": "OK" | "DESCUADRE",
-  "ai_diff": number
-}
-
-Aquí están los datos:
+Datos CSV:
 ${csvData}
-`;
+    `;
 
-    const result = await model.generateContent(prompt);
+    const responseSchema: Schema = {
+      type: SchemaType.OBJECT,
+      properties: {
+        empresa: { type: SchemaType.STRING },
+        periodo: { type: SchemaType.STRING },
+        periodo_inicio: { type: SchemaType.STRING },
+        periodo_fin: { type: SchemaType.STRING },
+        naturaleza_periodo: { type: SchemaType.STRING },
+        tipo_documento: { type: SchemaType.STRING },
+        moneda: { type: SchemaType.STRING },
+        mapped_data: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              originalName: { type: SchemaType.STRING },
+              originalBalance: { type: SchemaType.NUMBER },
+              niifCode: { type: SchemaType.STRING },
+              niifName: { type: SchemaType.STRING }
+            },
+            required: ["originalName", "originalBalance", "niifCode", "niifName"]
+          }
+        }
+      },
+      required: ["empresa", "periodo", "periodo_inicio", "periodo_fin", "naturaleza_periodo", "tipo_documento", "moneda", "mapped_data"]
+    };
+
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: responseSchema,
+      },
+    });
+
     const response = await result.response;
     const text = response.text();
 
     // Intentar extraer el JSON del texto de respuesta (a veces incluye formato markdown)
     let cleanText = text.trim();
-    if (cleanText.startsWith('```json')) {
+    if (cleanText.startsWith('\`\`\`json')) {
       cleanText = cleanText.substring(7);
     }
-    if (cleanText.startsWith('```')) {
+    if (cleanText.startsWith('\`\`\`')) {
         cleanText = cleanText.substring(3);
     }
-    if (cleanText.endsWith('```')) {
+    if (cleanText.endsWith('\`\`\`')) {
       cleanText = cleanText.substring(0, cleanText.length - 3);
     }
 
@@ -91,8 +125,13 @@ ${csvData}
     return {
       success: true,
       mapped_data: parsedData.mapped_data,
-      ai_status: parsedData.ai_status,
-      ai_diff: parsedData.ai_diff
+      empresa: parsedData.empresa,
+      periodo: parsedData.periodo,
+      periodo_inicio: parsedData.periodo_inicio,
+      periodo_fin: parsedData.periodo_fin,
+      naturaleza_periodo: parsedData.naturaleza_periodo,
+      tipo_documento: parsedData.tipo_documento,
+      moneda: parsedData.moneda
     };
 
   } catch (error: any) {

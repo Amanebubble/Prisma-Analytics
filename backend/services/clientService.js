@@ -59,8 +59,10 @@ async function seedMockClients() {
   }
 }
 
-// Ejecutar seed al arrancar el servicio por primera vez
-seedMockClients();
+// Los datos demo no deben aparecer en una instalación limpia salvo petición explícita.
+if (process.env.SEED_DEMO_DATA === 'true') {
+  seedMockClients();
+}
 
 module.exports = {
   getAllClients,

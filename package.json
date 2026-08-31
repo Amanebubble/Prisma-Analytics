@@ -5,10 +5,61 @@
   "main": "backend/main.js",
   "scripts": {
     "start": "concurrently \"npm run start:frontend\" \"wait-on http://localhost:5173 && npm run start:electron\"",
+    "start:reset": "concurrently \"npm run start:frontend\" \"wait-on http://localhost:5173 && npm run start:electron:reset\"",
     "start:frontend": "cd frontend && npm run dev",
-    "start:electron": "cross-env NODE_ENV=development electron .",
+    "start:electron": "cross-env NODE_ENV=development RESET_DB_ON_START=false SEED_DEMO_DATA=false electron .",
+    "start:electron:reset": "cross-env NODE_ENV=development RESET_DB_ON_START=true SEED_DEMO_DATA=false electron .",
     "build": "cd frontend && npm run build",
+    "build:app": "npm run build && electron-builder --win nsis",
+    "dist": "npm run build && electron-builder --win nsis",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "build": {
+    "appId": "com.prisma.analytics",
+    "productName": "Prisma Analytics",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "backend/**/*",
+      "frontend/dist/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/sqlite3/**",
+      "node_modules/pdf-parse/**",
+      "node_modules/@napi-rs/**",
+      "node_modules/canvas/**",
+      "**/*.node"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false
+    }
   },
   "repository": {
     "type": "git",
@@ -26,6 +77,7 @@
     "concurrently": "^10.0.4",
     "cross-env": "^10.1.0",
     "electron": "^43.3.0",
+    "electron-builder": "^26.15.3",
     "wait-on": "^9.1.0"
   },
   "dependencies": {
@@ -35,7 +87,7 @@
     "axios": "^1.19.0",
     "dotenv": "^17.4.2",
     "form-data": "^4.0.6",
-    "pdf-parse": "^2.4.5",
+    "pdf-parse": "^1.1.1",
     "sqlite3": "^6.0.1",
     "xlsx": "^0.18.5"
   }

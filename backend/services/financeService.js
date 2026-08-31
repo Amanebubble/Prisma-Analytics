@@ -1,4 +1,5 @@
 const { dbAsync } = require('../database/db');
+const { parseFinancialPayload, persistAccountsBalances } = require('./financialPayload');
 
 /**
  * Realiza un Análisis Horizontal entre dos estados financieros (Módulo 2)
@@ -78,11 +79,61 @@ async function getClientFinancials(clientId, year, type) {
   );
 
   if (!record) return null;
-  return JSON.parse(record.raw_data_json);
+  return parseFinancialPayload(record.raw_data_json);
+}
+
+async function saveFinancialData(clientId, periodYear, periodMonth, mappedData, statementType = 'balance', metadata = {}) {
+  try {
+    const rawDataJson = JSON.stringify({ metadata, cuentas: mappedData });
+    
+    // Check if it exists to update, else insert (using type 'balance' as default for now, could be passed)
+    const checkSql = `SELECT id FROM financial_statements WHERE client_id = ? AND period_year = ? AND period_month = ? AND type = ?`;
+    const existing = await dbAsync.get(checkSql, [clientId, periodYear, periodMonth, statementType]);
+
+    let statementId;
+    if (existing) {
+      const updateSql = `UPDATE financial_statements SET raw_data_json = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?`;
+      await dbAsync.run(updateSql, [rawDataJson, existing.id]);
+      statementId = existing.id;
+    } else {
+      const insertSql = `INSERT INTO financial_statements (client_id, period_year, period_month, type, raw_data_json) VALUES (?, ?, ?, ?, ?)`;
+      const inserted = await dbAsync.run(insertSql, [clientId, periodYear, periodMonth, statementType, rawDataJson]);
+      statementId = inserted.lastID;
+    }
+
+    // Consolidar cuentas y saldos en client_accounts / account_balances (fuente única).
+    await persistAccountsBalances(clientId, periodYear, periodMonth, statementType, mappedData, statementId);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving financial data:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function getClientAccounts(clientId, periodYear, periodMonth) {
+  const accounts = await dbAsync.all(
+    `SELECT a.id, a.original_name, a.niif_code, a.niif_name, a.confidence,
+            b.balance, b.period_year, b.period_month, b.statement_type
+     FROM client_accounts a
+     LEFT JOIN account_balances b
+       ON b.account_id = a.id AND b.period_year = ? AND b.period_month = ?
+     WHERE a.client_id = ?
+     ORDER BY a.original_name`,
+    [periodYear, periodMonth, clientId]
+  );
+  return { success: true, accounts };
+}
+
+async function getNiifCatalog() {
+  return dbAsync.all('SELECT code, name, type, level FROM niif_catalog ORDER BY code');
 }
 
 module.exports = {
   calculateHorizontalAnalysis,
   calculateVerticalAnalysis,
-  getClientFinancials
+  getClientFinancials,
+  saveFinancialData,
+  getClientAccounts,
+  getNiifCatalog
 };
